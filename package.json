@@ -1,0 +1,20 @@
+{
+  "name": "profile-hub",
+  "productName": "分身聚合浏览器",
+  "version": "0.1.0",
+  "description": "把多个相互隔离的浏览器分身聚合到一个窗口里",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "local.profilehub",
+    "files": ["src/**/*", "package.json"],
+    "win": { "target": "portable" }
+  }
+}

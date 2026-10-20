@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# 本地个人数据，不上传
+launcher/data/profiles.json
+浏览器分身数据/*
+!浏览器分身数据/.gitkeep

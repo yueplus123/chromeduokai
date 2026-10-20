@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Chrome分身启动器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="title">Chrome 分身启动器</div>
+  <nav>
+    <button id="tabProfiles" class="tab on">分身 <span id="count"></span></button>
+    <button id="tabCards" class="tab">卡库 <span id="cardCount"></span></button>
+  </nav>
+  <span class="spacer"></span>
+  <input id="search" placeholder="搜索名称 / 备注 / 路径">
+  <span id="profileTools">
+    <button id="scan" title="选择一个上级文件夹,把里面的分身数据文件夹批量添加">扫描文件夹</button>
+    <button id="reveal" title="在资源管理器中定位配置文件,换电脑时复制它">配置文件</button>
+    <button id="chromeBtn"></button>
+  </span>
+  <button id="add" class="primary">＋ 新建分身</button>
+</header>
+<div id="warn" hidden></div>
+
+<main id="grid"></main>
+<div id="empty" hidden>
+  <h2>还没有分身</h2>
+  <p>点右上角「新建分身」选择数据文件夹,或用「扫描文件夹」批量添加。</p>
+</div>
+
+<section id="cardsPage" hidden>
+  <div class="note">卡信息用 Windows 系统加密保存在本机。在这里统一管理所有卡,并勾选每张卡用于哪些分身;对应分身的卡片上就会出现一键复制按钮。</div>
+  <div id="cardGrid"></div>
+  <div id="cardEmpty" hidden>
+    <h2>卡库是空的</h2>
+    <p>点右上角「＋ 添加卡片」录入第一张卡。</p>
+  </div>
+</section>
+
+<div id="modal" hidden>
+  <form id="form">
+    <h3 id="formTitle">新建分身</h3>
+    <div class="body">
+    <label>数据文件夹 <small>(即 --user-data-dir,可以是新的空文件夹)</small>
+      <div class="row"><input name="dir" required><button type="button" id="pickDir">浏览…</button></div>
+    </label>
+    <div class="row">
+      <label>名称<input name="name" placeholder="留空则用文件夹名"></label>
+      <label class="narrow">颜色<input name="color" type="color"></label>
+    </div>
+    <label>窗口类型
+      <select name="mode">
+        <option value="normal">普通窗口</option>
+        <option value="incognito">无痕窗口(启动即无痕)</option>
+      </select>
+    </label>
+    <label>起始页 <small>(可选)</small><input name="home" placeholder="https://"></label>
+
+    <fieldset>
+      <legend>插件</legend>
+      <div id="extList"></div>
+      <div class="row">
+        <button type="button" id="addExt">添加已解压的插件文件夹…</button>
+      </div>
+      <label>从商店安装 <small>(粘贴商店链接或插件 ID,会在该分身里打开商店页面,需先保存分身)</small>
+        <div class="row"><input id="storeInput" placeholder="https://chromewebstore.google.com/detail/…"><button type="button" id="openStore">打开商店</button></div>
+      </label>
+    </fieldset>
+
+    <label>额外启动参数 <small>(可选,空格分隔)</small><input name="extraArgs" placeholder="--lang=en-US"></label>
+    <label>备注<input name="note"></label>
+    <div id="formErr" class="err" hidden></div>
+    </div>
+    <div class="actions">
+      <button type="button" id="cancel">取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</div>
+
+<div id="cardModal" class="modal" hidden>
+  <form id="cardForm">
+    <h3 id="cardFormTitle">添加卡片</h3>
+    <div class="body">
+    <label>名称 <small>(方便识别,如「公司美元卡」,留空则用尾号)</small><input name="label" autocomplete="off"></label>
+    <div class="row">
+      <label>持卡人<input name="holder" autocomplete="off"></label>
+      <label>有效期<input name="exp" placeholder="MM/YY" autocomplete="off"></label>
+    </div>
+    <div class="row">
+      <label>卡号<input name="number" inputmode="numeric" autocomplete="off"></label>
+      <label class="narrow">CVV<input name="cvv" inputmode="numeric" autocomplete="off"></label>
+    </div>
+    <div id="cardHint" class="hint" hidden></div>
+    <label>备注<input name="note" autocomplete="off"></label>
+    <fieldset>
+      <legend>用于哪些分身 <small>(勾选后,该分身卡片上会出现复制按钮)</small></legend>
+      <div id="useList"></div>
+    </fieldset>
+    <div id="cardErr" class="err" hidden></div>
+    </div>
+    <div class="actions">
+      <button type="button" id="cardCancel">取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</div>
+<div id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

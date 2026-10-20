@@ -1,0 +1,11 @@
+{
+  "name": "chrome-profile-launcher",
+  "productName": "Chrome分身启动器",
+  "version": "0.1.0",
+  "description": "管理并一键启动多个独立数据目录的真 Chrome 分身",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node ../node_modules/electron/cli.js .",
+    "test": "node test/chrome.test.js"
+  }
+}

@@ -1,0 +1,155 @@
+/* 星巴克风格:奶油底 + 绿色文字 + 金色点缀 + 红色警示
+   色值取自 Starbucks 设计规范 https://www.shadcn.io/design/starbucks */
+:root {
+  --green: #006241;          /* Starbucks Green:标题、强调文字 */
+  --green-accent: #00754A;   /* 主按钮 */
+  --green-house: #1E3932;    /* 正文深绿 */
+  --green-soft: #4a766a;     /* 次要文字 */
+  --green-light: #d4e9e2;    /* 悬停底色 */
+  --gold: #cba258;
+  --gold-light: #dfc49d;
+  --gold-lightest: #faf6ee;
+  --gold-text: #7a5c14;      /* 金色底上的文字,保证对比度 */
+  --red: #c82014;
+  --red-light: #fdecea;
+  --cream: #f2f0eb;
+  --white: #ffffff;
+  --line: #d6dbde;
+  --shadow: 0 2px 10px rgba(30, 57, 50, .10);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--cream); color: var(--green-house);
+  font: 600 16px/1.5 "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  letter-spacing: -.01em;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 5px; border: 2px solid var(--cream); }
+
+button {
+  font: inherit; font-weight: 700; font-size: 15px; color: var(--green);
+  background: var(--white); border: 1.5px solid var(--line); border-radius: 50px;
+  padding: 8px 18px; cursor: pointer; white-space: nowrap;
+  transition: background .15s, transform .2s ease, border-color .15s;
+}
+button:hover:not(:disabled) { background: var(--green-light); border-color: var(--green-accent); }
+button:active:not(:disabled) { transform: scale(.96); }
+button:disabled { opacity: .45; cursor: default; }
+input, select {
+  font: inherit; font-weight: 600; color: var(--green-house);
+  background: var(--white); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; width: 100%;
+}
+input::placeholder { color: #8fa89f; font-weight: 500; }
+input:focus, select:focus { outline: 3px solid var(--green-light); border-color: var(--green-accent); }
+input[type=checkbox] { accent-color: var(--green-accent); }
+.primary { background: var(--green-accent) !important; color: var(--white) !important; border-color: var(--green-accent) !important; }
+.primary:hover:not(:disabled) { background: var(--green) !important; border-color: var(--green) !important; }
+
+header {
+  display: flex; align-items: center; gap: 10px; padding: 14px 22px; flex-wrap: wrap;
+  background: var(--white); border-bottom: 3px solid var(--gold); box-shadow: var(--shadow);
+}
+.title { font-weight: 800; font-size: 21px; color: var(--green); margin-right: 14px; white-space: nowrap; flex: none; }
+.spacer { flex: 1; }
+#search { flex: 0 1 240px; min-width: 140px; width: auto; border-radius: 50px; padding-left: 16px; }
+#warn { background: var(--red-light); color: var(--red); padding: 10px 22px; font-size: 15px; font-weight: 700; }
+
+nav { display: flex; gap: 6px; }
+nav .tab { border-color: transparent; background: transparent; color: var(--green); font-size: 16px; padding: 8px 20px; }
+nav .tab.on { background: var(--green-accent); color: var(--white); border-color: var(--green-accent); }
+nav .tab:hover:not(.on):not(:disabled) { background: var(--green-light); border-color: transparent; }
+nav .tab span { font-size: 13px; margin-left: 4px; opacity: .8; }
+nav, #profileTools, #add { flex: none; }
+#profileTools { display: flex; gap: 8px; }
+
+#grid { flex: 1; overflow-y: auto; padding: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
+.card, .ccard {
+  background: var(--white); border: 1.5px solid #e7e7e7; border-radius: 16px; padding: 18px;
+  display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow);
+}
+.card.on { border-color: var(--green-accent); box-shadow: 0 0 0 2px var(--green-light), var(--shadow); }
+.top { display: flex; align-items: center; gap: 12px; }
+/* 分身名称徽章:星巴克深绿渐变底 + 金色字 + 金色描边 */
+.pname {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 7px 20px; border-radius: 50px;
+  font-size: 19px; font-weight: 800; letter-spacing: .06em; color: var(--gold-light);
+  background: linear-gradient(135deg, var(--green-accent) 0%, var(--green) 45%, var(--green-house) 100%);
+  border: 2px solid var(--gold);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 0 0 3px var(--gold-lightest), 0 3px 8px rgba(30, 57, 50, .28);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+}
+.top .status { margin-left: auto; flex: none; }
+.name { font-weight: 800; font-size: 18px; color: var(--green); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { font-size: 14px; font-weight: 700; color: var(--red); display: flex; align-items: center; gap: 6px; }
+.status i { width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px var(--red-light); }
+.on .status { color: var(--green-accent); }
+.on .status i { background: var(--green-accent); box-shadow: 0 0 0 3px var(--green-light); }
+.meta { font-size: 14px; color: var(--green-soft); word-break: break-all; }
+.meta.bad { color: var(--red); }
+.meta .tag, .tag { display: inline-block; background: var(--gold-lightest); border: 1px solid var(--gold-light); border-radius: 50px; padding: 1px 11px; margin: 0 5px 3px 0; color: var(--gold-text); font-size: 13px; font-weight: 700; }
+.tag.inc { background: var(--green-house); border-color: var(--green-house); color: var(--gold-lightest); }
+.btns { display: flex; gap: 8px; margin-top: auto; }
+.btns .grow { flex: 1; }
+/* 「启动」按钮:金色底 + 深绿字,与绿底金字的名称徽章互补(取色自 Starbucks 设计规范,光泽参考 css-buttons.com #69) */
+.btns .grow.primary {
+  background: linear-gradient(180deg, #dfc49d 0%, var(--gold) 100%) !important;
+  color: var(--green-house) !important; border-color: #b8893a !important;
+  font-size: 16px; font-weight: 800; letter-spacing: .12em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 5px rgba(122, 92, 20, .30);
+}
+.btns .grow.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ead3ae 0%, #d6b062 100%) !important;
+  border-color: var(--green-accent) !important;
+}
+.btns .grow.primary:disabled { filter: grayscale(.6); }
+.btns .icon { padding: 8px 13px; }
+.danger { color: var(--red); }
+.danger:hover:not(:disabled) { background: var(--red) !important; border-color: var(--red) !important; color: var(--white) !important; }
+
+#empty, #cardEmpty { flex: 1; display: grid; place-content: center; text-align: center; color: var(--green-soft); }
+#empty h2, #cardEmpty h2 { color: var(--green); font-size: 24px; font-weight: 800; }
+
+.modal, #modal, #cardModal { position: fixed; inset: 0; background: rgba(30, 57, 50, .5); display: grid; place-items: center; z-index: 10; }
+#modal[hidden], #cardModal[hidden], #warn[hidden], #toast[hidden], #empty[hidden], #grid[hidden], #formErr[hidden], #cardErr[hidden], #cardHint[hidden], #cardsPage[hidden], #cardEmpty[hidden], #profileTools[hidden] { display: none; }
+#form, #cardForm {
+  width: 560px; max-width: 94vw; max-height: calc(100vh - 32px); overflow: hidden;
+  background: var(--white); border: 2px solid var(--gold); border-radius: 18px; padding: 24px;
+  display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+}
+#form h3, #cardForm h3 { margin: 0; font-size: 22px; font-weight: 800; color: var(--green); }
+#form label, #cardForm label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--green); flex: 1; }
+#form small, #cardForm small { color: var(--green-soft); font-weight: 500; font-size: 13px; }
+#form .narrow, #cardForm .narrow { flex: none; width: 96px; }
+#form input[type=color], #cardForm input[type=color] { padding: 3px; height: 42px; }
+.row { display: flex; gap: 12px; align-items: flex-end; }
+#form fieldset, #cardForm fieldset { border: 1.5px solid var(--gold-light); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; background: var(--gold-lightest); }
+#form legend, #cardForm legend { font-size: 14px; font-weight: 800; color: var(--gold-text); padding: 0 8px; }
+#form .check, #cardForm .check { flex-direction: row; align-items: center; gap: 8px; }
+#form .check input, #cardForm .check input { width: auto; }
+.hint { font-size: 14px; color: var(--green-accent); font-weight: 700; }
+.ext { display: flex; align-items: center; gap: 8px; font-size: 14px; background: var(--white); border: 1px solid var(--gold-light); border-radius: 10px; padding: 5px 12px; margin-bottom: 4px; }
+.ext span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green-soft); }
+.ext button { padding: 0 10px; border: 0; color: var(--red); }
+.cardrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 14px; color: var(--green-soft); background: var(--gold-lightest); border: 1px solid var(--gold-light); border-radius: 12px; padding: 8px 10px; }
+.cardrow .lbl { margin-right: 2px; color: var(--gold-text); font-weight: 800; }
+.cardrow button { padding: 3px 13px; font-size: 14px; border-color: var(--gold-light); }
+.actions { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding-top: 12px; border-top: 1.5px solid var(--gold-light); }
+#form .body, #cardForm .body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-right: 6px; }
+.err { color: var(--red); font-size: 15px; font-weight: 700; }
+#toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); background: var(--green-house); color: var(--gold-lightest); font-weight: 700; padding: 11px 24px; border-radius: 50px; border: 1.5px solid var(--gold); box-shadow: var(--shadow); z-index: 20; }
+
+#cardsPage { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+#cardsPage .note { font-size: 14px; color: var(--green-soft); font-weight: 500; }
+#cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
+.ccard .num { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.ccard .used { font-size: 14px; color: var(--green-soft); }
+.ccard .used.none { color: var(--red); font-weight: 700; }
+.ccard .usedtags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+#useList { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
+#cardForm .use { flex-direction: row; align-items: center; gap: 10px; font-size: 15px; color: var(--green-house); }
+#cardForm .use input { width: auto; }

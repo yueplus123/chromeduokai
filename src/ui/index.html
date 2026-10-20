@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>分身聚合浏览器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside id="sidebar">
+  <div class="brand">分身列表</div>
+  <div id="plist"></div>
+  <button id="addBtn" class="add">＋ 新建分身</button>
+</aside>
+
+<main>
+  <div id="tabs"></div>
+  <div id="toolbar">
+    <button id="back" title="后退">←</button>
+    <button id="fwd" title="前进">→</button>
+    <button id="reload" title="刷新">⟳</button>
+    <input id="url" placeholder="输入网址或搜索词,回车跳转" spellcheck="false">
+  </div>
+  <div id="empty">
+    <h2>选择左侧的一个分身开始</h2>
+    <p>每个分身拥有独立的 Cookie、登录状态、UA、语言、时区和代理。</p>
+  </div>
+</main>
+
+<div id="modal" hidden>
+  <form id="form">
+    <h3 id="formTitle">新建分身</h3>
+    <label>名称<input name="name" required></label>
+    <label>颜色<input name="color" type="color" value="#4f8cff"></label>
+    <label>起始页<input name="home" placeholder="https://www.baidu.com"></label>
+    <label>User-Agent <small>(留空使用默认)</small><textarea name="ua" rows="2"></textarea></label>
+    <div class="row">
+      <label>语言<input name="lang" placeholder="zh-CN,zh;q=0.9,en;q=0.8"></label>
+      <label>时区<input name="timezone" placeholder="Asia/Shanghai"></label>
+    </div>
+    <label>代理 <small>(如 http://1.2.3.4:8080 或 socks5://1.2.3.4:1080)</small><input name="proxy"></label>
+    <div class="row">
+      <label>代理账号<input name="proxyUser" autocomplete="off"></label>
+      <label>代理密码<input name="proxyPass" type="password" autocomplete="new-password"></label>
+    </div>
+    <label>备注<input name="note"></label>
+    <div class="actions">
+      <button type="button" id="cancel">取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
