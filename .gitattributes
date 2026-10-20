@@ -1,0 +1,2 @@
+# Windows 批处理保持 CRLF 和 GBK 编码，避免中文乱码
+*.bat -text
