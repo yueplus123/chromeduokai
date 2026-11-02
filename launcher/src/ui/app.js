@@ -1,9 +1,10 @@
 const $ = (s) => document.querySelector(s);
 const PALETTE = ['#00754A', '#cba258', '#c82014', '#1E3932', '#2b5148', '#008248', '#b8860b', '#8c3b2a'];
-let S = { profiles: [], cards: [], chromeOk: true };
+let S = { profiles: [], cards: [], proxies: [], chromeOk: true };
 let view = 'profiles';
 let editingId = null;
 let editingCardId = null;
+let editingProxyId = null;
 let formExts = [];
 
 const el = (tag, props = {}, ...kids) => {
@@ -76,11 +77,22 @@ function renderProfiles() {
     if (p.mode === 'incognito') tags.append(el('span', { className: 'tag inc', textContent: '无痕' }));
     if (p.extensions.length) tags.append(el('span', { className: 'tag', textContent: `插件 ${p.extensions.length}` }));
     if (p.home) tags.append(el('span', { className: 'tag', textContent: '起始页' }));
+    const proxy = p.net.proxyId && S.proxies.find((x) => x.id === p.net.proxyId);
+    if (proxy) {
+      const area = [p.net.country.toUpperCase(), p.net.state, p.net.city].filter(Boolean).join(' · ');
+      tags.append(el('span', { className: 'tag net', textContent: `🌐 ${proxy.label}${area ? ' · ' + area : ''}${p.net.sticky ? ' · 固定IP' : ''}` }));
+    }
     if (p.note) tags.append(p.note);
     if (tags.childNodes.length) card.append(tags);
+    if (p.exit) {
+      const x = p.exit;
+      card.append(el('div', { className: 'netrow', title: `语言 ${x.locale} · 查询耗时 ${x.ms} ms` },
+        '出口 IP', el('b', { textContent: x.ip }), [x.country, x.region, x.city].filter(Boolean).join(' / '), ` · ${x.timezone}`));
+    }
+    if (p.proxyLost) card.append(el('div', { className: 'warnrow', textContent: '⚠ 代理已断开(启动器被关闭过),这个浏览器现在上不了网,请关闭后重新启动' }));
     card.append(...profileCardRows(p));
 
-    const open = el('button', { className: 'grow primary', textContent: on ? '再开一个窗口' : '启动', disabled: !S.chromeOk });
+    const open = el('button', { className: 'grow primary', textContent: p.launching ? '连接代理中…' : on ? '再开一个窗口' : '启动', disabled: !S.chromeOk || p.launching });
     open.onclick = async () => { const r = await launcher.launch(p.id); if (r && r.error) toast(r.error); };
     const btns = el('div', { className: 'btns' }, open);
     if (on) {
@@ -124,6 +136,7 @@ function renderCards() {
     const names = c.profileIds.map(nameOf).filter(Boolean);
     if (names.length) {
       box.append(el('div', { className: 'used' }, '用于:', el('div', { className: 'usedtags' }, ...names.map((n) => el('span', { className: 'tag', textContent: n })))));
+      if (names.length > 1) box.append(el('div', { className: 'warnrow', textContent: `⚠ 这张卡分给了 ${names.length} 个分身。如果它们登录的是同一个平台,共用一张卡很容易被关联封号` }));
     } else {
       box.append(el('div', { className: 'used none', textContent: '还没有分配给任何分身' }));
     }
@@ -139,17 +152,62 @@ function renderCards() {
   }));
 }
 
+function renderProxies() {
+  const q = $('#search').value.trim().toLowerCase();
+  const nameOf = (id) => (S.profiles.find((p) => p.id === id) || {}).name;
+  const list = S.proxies.filter((x) => !q || [x.label, x.host, x.username, ...x.profileIds.map(nameOf)].join('\n').toLowerCase().includes(q));
+  $('#proxyEmpty').hidden = S.proxies.length > 0;
+  $('#proxyGrid').hidden = S.proxies.length === 0;
+  $('#proxyGrid').replaceChildren(...list.map((x) => {
+    const box = el('div', { className: 'ccard' });
+    box.append(el('div', { className: 'top' }, el('div', { className: 'name', textContent: x.label, title: x.label }),
+      el('span', { className: 'tag', textContent: x.protocol.toUpperCase() })));
+    box.append(el('div', { className: 'host', textContent: `${x.host}:${x.port}${x.username ? '  ·  ' + x.username : ''}` }));
+    if (x.iproyal) box.append(el('div', { className: 'meta', textContent: 'IPRoyal:国家 / 州 / 城市和换 IP 方式在每个分身里单独设置' }));
+    if (x.broken) box.append(el('div', { className: 'meta bad', textContent: '密码无法解密(可能是从别的电脑复制来的),请编辑并重新填写密码' }));
+    const result = el('div', { className: 'meta' });
+    box.append(result);
+    const names = x.profileIds.map(nameOf).filter(Boolean);
+    box.append(names.length
+      ? el('div', { className: 'used' }, '用于:', el('div', { className: 'usedtags' }, ...names.map((n) => el('span', { className: 'tag', textContent: n }))))
+      : el('div', { className: 'used none', textContent: '还没有分身使用' }));
+    const test = el('button', { className: 'grow', textContent: '检测' });
+    test.onclick = async () => {
+      test.disabled = true; result.textContent = '检测中…'; result.className = 'meta';
+      const r = await launcher.testProxy(x.id, { country: x.iproyal ? 'us' : '' });
+      test.disabled = false;
+      if (r.error) { result.textContent = '✗ ' + r.error; result.className = 'meta bad'; return; }
+      result.textContent = `✓ ${r.exit.ip} · ${[r.exit.country, r.exit.region, r.exit.city].filter(Boolean).join(' / ')} · ${r.exit.timezone} · ${r.exit.ms} ms${x.iproyal ? '(按美国测试)' : ''}`;
+    };
+    const edit = el('button', { className: 'icon', textContent: '✎', title: '编辑' });
+    edit.onclick = () => openProxyForm(x);
+    const del = el('button', { className: 'icon danger', textContent: '🗑', title: '删除这个代理' });
+    del.onclick = async () => {
+      if (!confirm(`删除「${x.label}」?\n\n用它的分身会改为不使用代理。`)) return;
+      const r = await launcher.deleteProxy(x.id);
+      if (r && r.error) toast(r.error);
+    };
+    box.append(el('div', { className: 'btns' }, test, edit, del));
+    return box;
+  }));
+}
+
 function render() {
   $('#count').textContent = `${S.profiles.length}(运行 ${S.profiles.filter((p) => p.pid).length})`;
   $('#cardCount').textContent = S.cards.length;
-  const onCards = view === 'cards';
-  $('#tabProfiles').classList.toggle('on', !onCards);
-  $('#tabCards').classList.toggle('on', onCards);
-  $('#cardsPage').hidden = !onCards;
-  $('#profileTools').hidden = onCards;
-  $('#add').textContent = onCards ? '＋ 添加卡片' : '＋ 新建分身';
-  if (!onCards) { $('#cardEmpty').hidden = true; }
-  if (onCards) { $('#empty').hidden = true; $('#grid').hidden = true; renderCards(); } else { renderProfiles(); }
+  $('#proxyCount').textContent = S.proxies.length;
+  $('#tabProfiles').classList.toggle('on', view === 'profiles');
+  $('#tabCards').classList.toggle('on', view === 'cards');
+  $('#tabProxies').classList.toggle('on', view === 'proxies');
+  $('#cardsPage').hidden = view !== 'cards';
+  $('#proxiesPage').hidden = view !== 'proxies';
+  $('#profileTools').hidden = view !== 'profiles';
+  $('#add').textContent = { profiles: '＋ 新建分身', cards: '＋ 添加卡片', proxies: '＋ 添加代理' }[view];
+  if (view !== 'cards') $('#cardEmpty').hidden = true;
+  if (view !== 'proxies') $('#proxyEmpty').hidden = true;
+  if (view === 'profiles') renderProfiles(); else { $('#empty').hidden = true; $('#grid').hidden = true; }
+  if (view === 'cards') renderCards();
+  if (view === 'proxies') renderProxies();
 }
 
 function setView(v) { view = v; render(); }
@@ -169,6 +227,16 @@ function openForm(p) {
   const d = p || { color: PALETTE[S.profiles.length % PALETTE.length], mode: 'normal' };
   for (const k of ['dir', 'name', 'color', 'mode', 'home', 'extraArgs', 'note']) f.elements[k].value = d[k] || '';
   formExts = [...((p && p.extensions) || [])];
+  const net = (p && p.net) || { proxyId: '', country: 'us', state: '', city: '', sticky: false };
+  $('#proxySelect').replaceChildren(el('option', { value: '', textContent: S.proxies.length ? '不使用代理(本机网络)' : '不使用代理(先到「IP 池」添加代理)' }),
+    ...S.proxies.map((x) => el('option', { value: x.id, textContent: `${x.label}(${x.host}:${x.port})` })));
+  f.elements.proxyId.value = net.proxyId || '';
+  f.elements.country.value = net.country || '';
+  f.elements.state.value = net.state || '';
+  f.elements.city.value = net.city || '';
+  f.elements.sticky.checked = !!net.sticky;
+  $('#netTest').hidden = true;
+  syncNetOpts();
   renderExts();
   $('#storeInput').value = '';
   $('#formErr').hidden = true;
@@ -207,7 +275,8 @@ const closeCardForm = () => { $('#cardModal').hidden = true; };
 
 $('#tabProfiles').onclick = () => setView('profiles');
 $('#tabCards').onclick = () => setView('cards');
-$('#add').onclick = () => (view === 'cards' ? openCardForm(null) : openForm(null));
+$('#tabProxies').onclick = () => setView('proxies');
+$('#add').onclick = () => (view === 'cards' ? openCardForm(null) : view === 'proxies' ? openProxyForm(null) : openForm(null));
 $('#cancel').onclick = closeForm;
 $('#cardCancel').onclick = closeCardForm;
 $('#pickDir').onclick = async () => {
@@ -233,6 +302,7 @@ $('#form').onsubmit = async (e) => {
     dir: f.dir.value, name: f.name.value, color: f.color.value, mode: f.mode.value,
     home: f.home.value, extraArgs: f.extraArgs.value, note: f.note.value,
     extensions: formExts,
+    net: { proxyId: f.proxyId.value, country: f.country.value, state: f.state.value, city: f.city.value, sticky: f.sticky.checked },
   };
   const r = await launcher.save(data);
   if (r.error) { $('#formErr').textContent = r.error; $('#formErr').hidden = false; return; }
@@ -261,8 +331,62 @@ $('#reveal').onclick = () => launcher.revealData();
 $('#search').oninput = render;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('#cardModal').hidden) closeCardForm(); else if (!$('#modal').hidden) closeForm();
+  if (!$('#proxyModal').hidden) closeProxyForm(); else if (!$('#cardModal').hidden) closeCardForm(); else if (!$('#modal').hidden) closeForm();
 });
+
+// ---- 分身里的代理设置 ----
+function syncNetOpts() {
+  const f = $('#form').elements;
+  const x = S.proxies.find((y) => y.id === f.proxyId.value);
+  $('#netOpts').hidden = !x;
+  // 地区和固定 IP 只对 IPRoyal 有意义;其他代理商的地区一般写在它自己的账号/端口里
+  for (const k of ['country', 'state', 'city', 'sticky']) f[k].closest('label').hidden = !(x && x.iproyal);
+}
+$('#proxySelect').onchange = () => { $('#netTest').hidden = true; syncNetOpts(); };
+$('#netTestBtn').onclick = async () => {
+  const f = $('#form').elements;
+  const t = $('#netTest');
+  t.hidden = false; t.className = 'hint'; t.textContent = '检测中…';
+  const r = await launcher.testProxy(f.proxyId.value, { country: f.country.value, state: f.state.value, city: f.city.value });
+  if (r.error) { t.className = 'hint bad'; t.textContent = '✗ ' + r.error; return; }
+  const x = r.exit;
+  t.textContent = `✓ ${x.ip} · ${[x.country, x.region, x.city].filter(Boolean).join(' / ')} · ${x.timezone} · 语言 ${x.locale} · ${x.ms} ms`;
+};
+
+// ---- IP 池表单 ----
+function openProxyForm(x) {
+  editingProxyId = x ? x.id : null;
+  const f = $('#proxyForm');
+  $('#proxyFormTitle').textContent = x ? '编辑代理' : '添加代理';
+  f.elements.label.value = x ? x.label : '';
+  f.elements.line.value = '';
+  f.elements.protocol.value = x ? x.protocol : 'http';
+  f.elements.host.value = x ? x.host : '';
+  f.elements.port.value = x ? x.port : '';
+  f.elements.username.value = x ? x.username : '';
+  f.elements.password.value = '';
+  f.elements.password.placeholder = x ? '留空沿用原密码' : '';
+  const hint = $('#proxyHint');
+  hint.hidden = false;
+  hint.textContent = 'IPRoyal 用 HTTP 协议即可。密码里自带的 _country-xx 等参数会被自动去掉,地区请在分身里设置。';
+  $('#proxyErr').hidden = true;
+  $('#proxyModal').hidden = false;
+  f.elements[x ? 'label' : 'line'].focus();
+}
+const closeProxyForm = () => { $('#proxyModal').hidden = true; };
+$('#proxyCancel').onclick = closeProxyForm;
+$('#proxyForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target.elements;
+  const r = await launcher.saveProxy({
+    id: editingProxyId || undefined, label: f.label.value, line: f.line.value,
+    protocol: f.protocol.value, host: f.host.value, port: f.port.value, username: f.username.value, password: f.password.value,
+  });
+  if (r.error) { $('#proxyErr').textContent = r.error; $('#proxyErr').hidden = false; return; }
+  closeProxyForm();
+  const area = r.area && r.area.country ? `(识别到地区 ${r.area.country.toUpperCase()},请在分身里选择国家)` : '';
+  toast('代理已保存' + area);
+};
 
 launcher.onState((s) => { S = s; render(); });
 launcher.state().then((s) => { S = s; render(); });

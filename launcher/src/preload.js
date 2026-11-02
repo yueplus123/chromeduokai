@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld('launcher', {
   openStore: call('ext:store'),
   pickChrome: call('chrome:pick'),
   revealData: call('data:reveal'),
+  saveProxy: call('proxy:save'),
+  deleteProxy: call('proxy:delete'),
+  testProxy: call('proxy:test'),
 });

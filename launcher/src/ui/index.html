@@ -12,6 +12,7 @@
   <nav>
     <button id="tabProfiles" class="tab on">分身 <span id="count"></span></button>
     <button id="tabCards" class="tab">卡库 <span id="cardCount"></span></button>
+    <button id="tabProxies" class="tab">IP 池 <span id="proxyCount"></span></button>
   </nav>
   <span class="spacer"></span>
   <input id="search" placeholder="搜索名称 / 备注 / 路径">
@@ -38,6 +39,23 @@
     <p>点右上角「＋ 添加卡片」录入第一张卡。</p>
   </div>
 </section>
+
+<section id="proxiesPage" hidden>
+  <div class="note">在这里添加买来的代理账号(如 IPRoyal 住宅代理),密码用 Windows 系统加密保存在本机。然后在分身的「编辑」里选择用哪个代理、哪个国家。启动时会自动查出口 IP,并把浏览器的语言和时区改成 IP 所在地。</div>
+  <div id="proxyGrid"></div>
+  <div id="proxyEmpty" hidden>
+    <h2>IP 池是空的</h2>
+    <p>点右上角「＋ 添加代理」,把代理后台给的那一行粘贴进来即可。</p>
+  </div>
+</section>
+
+<datalist id="countryList">
+  <option value="us">美国</option><option value="gb">英国</option><option value="ca">加拿大</option><option value="au">澳大利亚</option>
+  <option value="de">德国</option><option value="fr">法国</option><option value="nl">荷兰</option><option value="es">西班牙</option>
+  <option value="it">意大利</option><option value="jp">日本</option><option value="kr">韩国</option><option value="sg">新加坡</option>
+  <option value="hk">香港</option><option value="tw">台湾</option><option value="br">巴西</option><option value="mx">墨西哥</option>
+  <option value="in">印度</option><option value="tr">土耳其</option>
+</datalist>
 
 <div id="modal" hidden>
   <form id="form">
@@ -67,6 +85,26 @@
       <label>从商店安装 <small>(粘贴商店链接或插件 ID,会在该分身里打开商店页面,需先保存分身)</small>
         <div class="row"><input id="storeInput" placeholder="https://chromewebstore.google.com/detail/…"><button type="button" id="openStore">打开商店</button></div>
       </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>代理 IP</legend>
+      <label>使用代理
+        <select name="proxyId" id="proxySelect"></select>
+      </label>
+      <div id="netOpts">
+        <div class="row">
+          <label>国家 <small>(两位代码)</small><input name="country" list="countryList" placeholder="us" autocomplete="off"></label>
+          <label>州 <small>(仅美国,可空)</small><input name="state" placeholder="如 california" autocomplete="off"></label>
+          <label>城市 <small>(可空)</small><input name="city" placeholder="如 newyork" autocomplete="off"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="sticky"> 固定 IP(每次启动尽量用同一个 IP,适合长期养号;不勾选则每次启动换新 IP)</label>
+        <div class="row">
+          <button type="button" id="netTestBtn">检测这个设置</button>
+          <span id="netTest" class="hint" hidden></span>
+        </div>
+        <div class="meta">启动时自动:语言和时区跟随出口 IP、禁止 WebRTC 泄露真实 IP、禁止网站获取位置。无痕窗口同样走代理。</div>
+      </div>
     </fieldset>
 
     <label>额外启动参数 <small>(可选,空格分隔)</small><input name="extraArgs" placeholder="--lang=en-US"></label>
@@ -103,6 +141,34 @@
     </div>
     <div class="actions">
       <button type="button" id="cardCancel">取消</button>
+      <button type="submit" class="primary">保存</button>
+    </div>
+  </form>
+</div>
+<div id="proxyModal" class="modal" hidden>
+  <form id="proxyForm">
+    <h3 id="proxyFormTitle">添加代理</h3>
+    <div class="body">
+    <label>名称 <small>(方便识别,如「IPRoyal 住宅」)</small><input name="label" autocomplete="off"></label>
+    <label>快速粘贴 <small>(支持 host:port:用户名:密码 或 用户名:密码@host:port;填了这里就不用填下面)</small>
+      <input name="line" placeholder="geo.iproyal.com:12321:用户名:密码" autocomplete="off">
+    </label>
+    <div class="row">
+      <label class="narrow">协议
+        <select name="protocol"><option value="http">HTTP</option><option value="socks5">SOCKS5</option></select>
+      </label>
+      <label>主机<input name="host" placeholder="geo.iproyal.com" autocomplete="off"></label>
+      <label class="narrow">端口<input name="port" inputmode="numeric" placeholder="12321" autocomplete="off"></label>
+    </div>
+    <div class="row">
+      <label>用户名<input name="username" autocomplete="off"></label>
+      <label>密码<input name="password" type="password" autocomplete="off"></label>
+    </div>
+    <div id="proxyHint" class="hint" hidden></div>
+    <div id="proxyErr" class="err" hidden></div>
+    </div>
+    <div class="actions">
+      <button type="button" id="proxyCancel">取消</button>
       <button type="submit" class="primary">保存</button>
     </div>
   </form>

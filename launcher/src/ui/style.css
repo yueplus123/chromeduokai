@@ -50,16 +50,16 @@ input[type=checkbox] { accent-color: var(--green-accent); }
 .primary:hover:not(:disabled) { background: var(--green) !important; border-color: var(--green) !important; }
 
 header {
-  display: flex; align-items: center; gap: 10px; padding: 14px 22px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 10px; padding: 14px 22px; flex-wrap: nowrap;
   background: var(--white); border-bottom: 3px solid var(--gold); box-shadow: var(--shadow);
 }
-.title { font-weight: 800; font-size: 21px; color: var(--green); margin-right: 14px; white-space: nowrap; flex: none; }
+.title { font-weight: 800; font-size: 21px; color: var(--green); margin-right: 6px; white-space: nowrap; flex: none; }
 .spacer { flex: 1; }
-#search { flex: 0 1 240px; min-width: 140px; width: auto; border-radius: 50px; padding-left: 16px; }
+#search { flex: 0 1 220px; min-width: 110px; width: auto; border-radius: 50px; padding-left: 16px; }
 #warn { background: var(--red-light); color: var(--red); padding: 10px 22px; font-size: 15px; font-weight: 700; }
 
 nav { display: flex; gap: 6px; }
-nav .tab { border-color: transparent; background: transparent; color: var(--green); font-size: 16px; padding: 8px 20px; }
+nav .tab { border-color: transparent; background: transparent; color: var(--green); font-size: 16px; padding: 8px 15px; }
 nav .tab.on { background: var(--green-accent); color: var(--white); border-color: var(--green-accent); }
 nav .tab:hover:not(.on):not(:disabled) { background: var(--green-light); border-color: transparent; }
 nav .tab span { font-size: 13px; margin-left: 4px; opacity: .8; }
@@ -111,26 +111,26 @@ nav, #profileTools, #add { flex: none; }
 .danger { color: var(--red); }
 .danger:hover:not(:disabled) { background: var(--red) !important; border-color: var(--red) !important; color: var(--white) !important; }
 
-#empty, #cardEmpty { flex: 1; display: grid; place-content: center; text-align: center; color: var(--green-soft); }
-#empty h2, #cardEmpty h2 { color: var(--green); font-size: 24px; font-weight: 800; }
+#empty, #cardEmpty, #proxyEmpty { flex: 1; display: grid; place-content: center; text-align: center; color: var(--green-soft); }
+#empty h2, #cardEmpty h2, #proxyEmpty h2 { color: var(--green); font-size: 24px; font-weight: 800; }
 
 .modal, #modal, #cardModal { position: fixed; inset: 0; background: rgba(30, 57, 50, .5); display: grid; place-items: center; z-index: 10; }
-#modal[hidden], #cardModal[hidden], #warn[hidden], #toast[hidden], #empty[hidden], #grid[hidden], #formErr[hidden], #cardErr[hidden], #cardHint[hidden], #cardsPage[hidden], #cardEmpty[hidden], #profileTools[hidden] { display: none; }
-#form, #cardForm {
+#modal[hidden], #cardModal[hidden], #warn[hidden], #toast[hidden], #empty[hidden], #grid[hidden], #formErr[hidden], #cardErr[hidden], #cardHint[hidden], #cardsPage[hidden], #cardEmpty[hidden], #profileTools[hidden], .modal[hidden], #proxiesPage[hidden], #proxyEmpty[hidden], #proxyErr[hidden], #proxyHint[hidden], #netTest[hidden], #netOpts[hidden] { display: none; }
+#form, #cardForm, #proxyForm {
   width: 560px; max-width: 94vw; max-height: calc(100vh - 32px); overflow: hidden;
   background: var(--white); border: 2px solid var(--gold); border-radius: 18px; padding: 24px;
   display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
 }
-#form h3, #cardForm h3 { margin: 0; font-size: 22px; font-weight: 800; color: var(--green); }
-#form label, #cardForm label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--green); flex: 1; }
-#form small, #cardForm small { color: var(--green-soft); font-weight: 500; font-size: 13px; }
-#form .narrow, #cardForm .narrow { flex: none; width: 96px; }
-#form input[type=color], #cardForm input[type=color] { padding: 3px; height: 42px; }
+#form h3, #cardForm h3, #proxyForm h3 { margin: 0; font-size: 22px; font-weight: 800; color: var(--green); }
+#form label, #cardForm label, #proxyForm label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--green); flex: 1; }
+#form small, #cardForm small, #proxyForm small { color: var(--green-soft); font-weight: 500; font-size: 13px; }
+#form .narrow, #cardForm .narrow, #proxyForm .narrow { flex: none; width: 96px; }
+#form input[type=color], #cardForm input[type=color], #proxyForm input[type=color] { padding: 3px; height: 42px; }
 .row { display: flex; gap: 12px; align-items: flex-end; }
-#form fieldset, #cardForm fieldset { border: 1.5px solid var(--gold-light); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; background: var(--gold-lightest); }
-#form legend, #cardForm legend { font-size: 14px; font-weight: 800; color: var(--gold-text); padding: 0 8px; }
-#form .check, #cardForm .check { flex-direction: row; align-items: center; gap: 8px; }
-#form .check input, #cardForm .check input { width: auto; }
+#form fieldset, #cardForm fieldset, #proxyForm fieldset { border: 1.5px solid var(--gold-light); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; background: var(--gold-lightest); }
+#form legend, #cardForm legend, #proxyForm legend { font-size: 14px; font-weight: 800; color: var(--gold-text); padding: 0 8px; }
+#form .check, #cardForm .check, #proxyForm .check { flex-direction: row; align-items: center; gap: 8px; }
+#form .check input, #cardForm .check input, #proxyForm .check input { width: auto; }
 .hint { font-size: 14px; color: var(--green-accent); font-weight: 700; }
 .ext { display: flex; align-items: center; gap: 8px; font-size: 14px; background: var(--white); border: 1px solid var(--gold-light); border-radius: 10px; padding: 5px 12px; margin-bottom: 4px; }
 .ext span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green-soft); }
@@ -139,17 +139,28 @@ nav, #profileTools, #add { flex: none; }
 .cardrow .lbl { margin-right: 2px; color: var(--gold-text); font-weight: 800; }
 .cardrow button { padding: 3px 13px; font-size: 14px; border-color: var(--gold-light); }
 .actions { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding-top: 12px; border-top: 1.5px solid var(--gold-light); }
-#form .body, #cardForm .body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-right: 6px; }
+#form .body, #cardForm .body, #proxyForm .body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-right: 6px; }
 .err { color: var(--red); font-size: 15px; font-weight: 700; }
 #toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); background: var(--green-house); color: var(--gold-lightest); font-weight: 700; padding: 11px 24px; border-radius: 50px; border: 1.5px solid var(--gold); box-shadow: var(--shadow); z-index: 20; }
 
-#cardsPage { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
-#cardsPage .note { font-size: 14px; color: var(--green-soft); font-weight: 500; }
-#cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
+#cardsPage, #proxiesPage { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+#cardsPage .note, #proxiesPage .note { font-size: 14px; color: var(--green-soft); font-weight: 500; }
+#cardGrid, #proxyGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
 .ccard .num { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: .08em; font-variant-numeric: tabular-nums; }
 .ccard .used { font-size: 14px; color: var(--green-soft); }
 .ccard .used.none { color: var(--red); font-weight: 700; }
 .ccard .usedtags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 #useList { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
-#cardForm .use { flex-direction: row; align-items: center; gap: 10px; font-size: 15px; color: var(--green-house); }
-#cardForm .use input { width: auto; }
+#cardForm .use, #proxyForm .use { flex-direction: row; align-items: center; gap: 10px; font-size: 15px; color: var(--green-house); }
+#cardForm .use input, #proxyForm .use input { width: auto; }
+
+/* 代理 */
+#netOpts { display: flex; flex-direction: column; gap: 12px; }
+#netTest { flex: 1; font-size: 14px; }
+#netTest.bad { color: var(--red); }
+.netrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 14px; color: var(--green-house); background: var(--green-light); border: 1px solid #b5d6cb; border-radius: 12px; padding: 7px 11px; }
+.netrow b { color: var(--green); font-variant-numeric: tabular-nums; }
+.tag.net { background: var(--green-light); border-color: #b5d6cb; color: var(--green); }
+.warnrow { font-size: 13px; color: var(--red); background: var(--red-light); border-radius: 10px; padding: 6px 10px; font-weight: 700; }
+.ccard .host { font-size: 15px; color: var(--green-soft); word-break: break-all; }
+#form label[hidden], #proxyForm label[hidden] { display: none; }
