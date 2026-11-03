@@ -111,7 +111,17 @@ function connectVia(port, hostPort) {
   const dead = await createRelay({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'pw', via: px.parseVia('127.0.0.1:1') });
   assert.strictEqual((await connectVia(dead.port, 'secure.test:443')).status, 502);
   assert.match(dead.stats.lastError, /连不上前置代理/);
-  dead.close(); front.close(); up2.server.close();
+  dead.close();
+  // 前置代理接受连接但不回应(模拟机场屏蔽端口):15 秒后给出明确提示
+  const silent = require('net').createServer((sk) => { sk.on('error', () => {}); });
+  await new Promise((r) => silent.listen(0, '127.0.0.1', r));
+  const hung = await createRelay({ protocol: 'http', host: 'geo.iproyal.com', port: 12321, username: 'u1', password: 'pw', via: px.parseVia(`127.0.0.1:${silent.address().port}`) });
+  const t0 = Date.now();
+  assert.strictEqual((await connectVia(hung.port, 'secure.test:443')).status, 502);
+  assert.ok(Date.now() - t0 < 25000);
+  assert.match(hung.stats.lastError, /屏蔽了这个端口/);
+  hung.close(); silent.close();
+  front.close(); up2.server.close();
 
   target.close();
   console.log('proxy tests passed');

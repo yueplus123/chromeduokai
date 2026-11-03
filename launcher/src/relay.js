@@ -12,7 +12,7 @@ function reader(sock) {
   let buf = Buffer.alloc(0);
   let want = null;
   const onData = (d) => { buf = Buffer.concat([buf, d]); check(); };
-  const onEnd = () => { if (want) { const w = want; want = null; w.reject(new Error('上游代理断开了连接')); } };
+  const onEnd = (err) => { if (want) { const w = want; want = null; w.reject(err instanceof Error ? err : new Error('上游代理断开了连接')); } };
   sock.on('data', onData);
   sock.on('end', onEnd);
   sock.on('error', onEnd);
@@ -41,23 +41,26 @@ const basicAuth = (u) => 'Basic ' + Buffer.from(`${u.username}:${u.password}`).t
 
 // up.via:前置代理(如本机 Clash 127.0.0.1:7890)。先通过它出国,再连上游代理。
 // 国内直连海外 HTTP/SOCKS5 代理是明文的,访问被封网站会被防火墙重置连接,加一层加密的前置代理就能解决。
-async function connectUpstream(up) {
+async function connectUpstream(up, ctx = { sockets: [] }) {
   if (up.via) {
-    try { return await openTunnel(up.via, up.host, up.port); } catch (e) {
-      const msg = e.code === 'ECONNREFUSED' ? `连不上前置代理 ${up.via.host}:${up.via.port},请确认 Clash 等代理软件已打开` : '前置代理:' + e.message;
+    try { return await openTunnel(up.via, up.host, up.port, ctx); } catch (e) {
+      const msg = e.code === 'ECONNREFUSED' ? `连不上前置代理 ${up.via.host}:${up.via.port},请确认 Clash 等代理软件已打开`
+        : e.timeout ? `前置代理连不上 ${up.host}:${up.port}(超时)。多半是机场节点屏蔽了这个端口,请在 Clash 里换个节点再试`
+          : '前置代理:' + e.message;
       throw Object.assign(new Error(msg), { status: e.status });
     }
   }
   return new Promise((resolve, reject) => {
     const s = net.connect({ host: up.host, port: up.port });
+    ctx.sockets.push(s);
     s.setTimeout(TIMEOUT, () => s.destroy(new Error('连接上游代理超时')));
     s.once('connect', () => { s.setTimeout(0); resolve(s); });
     s.once('error', reject);
   });
 }
 
-async function httpTunnel(up, host, port) {
-  const s = await connectUpstream(up);
+async function httpTunnel(up, host, port, ctx) {
+  const s = await connectUpstream(up, ctx);
   const auth = up.username ? `Proxy-Authorization: ${basicAuth(up)}\r\n` : '';
   s.write(`CONNECT ${host}:${port} HTTP/1.1\r\nHost: ${host}:${port}\r\n${auth}\r\n`);
   const r = reader(s);
@@ -73,8 +76,8 @@ async function httpTunnel(up, host, port) {
   } catch (e) { s.destroy(); throw e; }
 }
 
-async function socksTunnel(up, host, port) {
-  const s = await connectUpstream(up);
+async function socksTunnel(up, host, port, ctx) {
+  const s = await connectUpstream(up, ctx);
   const r = reader(s);
   try {
     const useAuth = !!up.username;
@@ -98,7 +101,25 @@ async function socksTunnel(up, host, port) {
   } catch (e) { s.destroy(); throw e; }
 }
 
-const openTunnel = (up, host, port) => (up.protocol === 'socks5' ? socksTunnel : httpTunnel)(up, host, Number(port));
+// 握手阶段限时,避免对方不回应时一直卡住
+const HANDSHAKE_TIMEOUT = 15000;
+async function openTunnel(up, host, port, ctx) {
+  const own = !ctx;
+  ctx = ctx || { sockets: [] };
+  const fn = up.protocol === 'socks5' ? socksTunnel : httpTunnel;
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    // 经过前置代理时要多等一层握手
+    timer = setTimeout(() => reject(Object.assign(new Error(`连接 ${host}:${port} 超时`), { timeout: true })), HANDSHAKE_TIMEOUT * (up.via ? 2 : 1));
+  });
+  const p = fn(up, host, Number(port), ctx);
+  try { return await Promise.race([p, timeout]); } catch (e) {
+    // 超时或失败:关掉这次握手开的所有连接(只由最外层负责)
+    if (own) for (const sk of ctx.sockets) sk.destroy();
+    p.catch(() => {});
+    throw e;
+  } finally { clearTimeout(timer); }
+}
 
 // 启动中转,返回 { port, close, stats }。只监听 127.0.0.1,外部访问不到
 function createRelay(upstream) {
