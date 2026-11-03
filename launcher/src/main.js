@@ -97,6 +97,8 @@ function snapshot() {
       pid: running.get(chrome.normDir(p.dir)) || null,
       net: netOf(p),
       exit: live.has(p.id) ? live.get(p.id).exit : null,
+      // 最近 3 分钟内的转发失败
+      netFailures: live.has(p.id) ? live.get(p.id).relay.stats.failures.filter((f) => Date.now() - f.at < 180000) : [],
       launching: launching.has(p.id),
       // 绑定了代理、浏览器开着,但中转不在了(比如启动器被关过):此时浏览器上不了网
       proxyLost: !!(netOf(p).proxyId && findProxy(netOf(p).proxyId) && running.get(chrome.normDir(p.dir)) && !live.has(p.id)),

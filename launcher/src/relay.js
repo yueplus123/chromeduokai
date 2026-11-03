@@ -94,7 +94,12 @@ const openTunnel = (up, host, port) => (up.protocol === 'socks5' ? socksTunnel :
 // 启动中转,返回 { port, close, stats }。只监听 127.0.0.1,外部访问不到
 function createRelay(upstream) {
   const sockets = new Set();
-  const stats = { lastError: '', tunnels: 0 };
+  // failures:最近几次转发失败(网站 + 原因),显示在分身卡片上方便排查
+  const stats = { lastError: '', tunnels: 0, failures: [] };
+  const fail = (host, msg) => {
+    stats.lastError = msg;
+    stats.failures = [{ host, msg, at: Date.now() }, ...stats.failures.filter((f) => f.host !== host)].slice(0, 5);
+  };
   const track = (s) => { sockets.add(s); s.on('close', () => sockets.delete(s)); s.on('error', () => {}); return s; };
 
   const server = http.createServer((req, res) => {
@@ -112,9 +117,13 @@ function createRelay(upstream) {
       Object.assign(opts, { host: upstream.host, port: upstream.port, path: req.url });
       if (upstream.username) headers['proxy-authorization'] = basicAuth(upstream);
     }
-    const up = http.request(opts, (ur) => { res.writeHead(ur.statusCode, ur.headers); ur.pipe(res); });
+    const up = http.request(opts, (ur) => {
+      // 上游代理自己返回的 5xx(如目标网站被代理商拦截)
+      if (ur.statusCode >= 500 && upstream.protocol !== 'socks5') fail(url.host, `代理商返回 ${ur.statusCode}`);
+      res.writeHead(ur.statusCode, ur.headers); ur.pipe(res);
+    });
     up.setTimeout(TIMEOUT, () => up.destroy(new Error('超时')));
-    up.on('error', (e) => { stats.lastError = e.message; if (!res.headersSent) res.writeHead(502); res.end(); });
+    up.on('error', (e) => { fail(url.host, e.message); if (!res.headersSent) res.writeHead(502); res.end(); });
     req.pipe(up);
   });
 
@@ -132,7 +141,7 @@ function createRelay(upstream) {
       const end = () => { s.destroy(); client.destroy(); };
       s.on('close', end); client.on('close', end);
     }, (e) => {
-      stats.lastError = e.message;
+      fail(host, e.message);
       client.end('HTTP/1.1 502 Bad Gateway\r\n\r\n');
     });
   });

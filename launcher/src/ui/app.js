@@ -89,6 +89,10 @@ function renderProfiles() {
       card.append(el('div', { className: 'netrow', title: `语言 ${x.locale} · 查询耗时 ${x.ms} ms` },
         '出口 IP', el('b', { textContent: x.ip }), [x.country, x.region, x.city].filter(Boolean).join(' / '), ` · ${x.timezone}`));
     }
+    if (p.netFailures && p.netFailures.length) {
+      card.append(el('div', { className: 'warnrow', title: '这些网站通过代理打不开,原因来自代理商或目标网站' },
+        '最近打不开:', ...p.netFailures.slice(0, 3).map((f) => el('div', { textContent: `${f.host.replace(/:443$/, '')} — ${f.msg}` }))));
+    }
     if (p.proxyLost) card.append(el('div', { className: 'warnrow', textContent: '⚠ 代理已断开(启动器被关闭过),这个浏览器现在上不了网,请关闭后重新启动' }));
     card.append(...profileCardRows(p));
 
