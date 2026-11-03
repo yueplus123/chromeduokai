@@ -84,6 +84,35 @@ function connectVia(port, hostPort) {
     bad.close();
     up.server.close();
   }
+  // ---- 前置代理:relay → 前置(无密码 HTTP 代理,模拟 Clash)→ 上游(带密码)→ 目标 ----
+  const up2 = await fakeHttpProxy({ user: 'u1', pass: 'pw', targetPort });
+  const frontLog = [];
+  const front = http.createServer();
+  front.on('connect', (req, sock) => {
+    frontLog.push(req.url);
+    const [h, p] = req.url.split(':');
+    const t = require('net').connect(Number(p), h === 'geo.iproyal.com' ? '127.0.0.1' : h, () => { sock.write('HTTP/1.1 200 OK\r\n\r\n'); t.pipe(sock); sock.pipe(t); });
+    t.on('error', () => sock.destroy());
+  });
+  await new Promise((r) => front.listen(0, '127.0.0.1', r));
+  const via = px.parseVia(`127.0.0.1:${front.address().port}`);
+  assert.deepStrictEqual(px.parseVia('socks5://127.0.0.1:7891'), { protocol: 'socks5', host: '127.0.0.1', port: 7891, username: '', password: '' });
+  assert.strictEqual(px.parseVia(''), null);
+  assert.strictEqual(px.formatVia(via), `127.0.0.1:${front.address().port}`);
+  const chained = await createRelay({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'pw', via });
+  const d1 = await connectVia(chained.port, 'secure.test:443');
+  assert.strictEqual(d1.status, 200);
+  assert.ok(d1.body.endsWith('ok secure.test:443 /tunnel'));
+  const d2 = await viaRelay(chained.port, 'http://plain.test/x');
+  assert.strictEqual(d2.body, 'ok plain.test /x');
+  assert.ok(frontLog.every((u) => u === `geo.iproyal.com:${up2.port}`) && frontLog.length === 2, frontLog.join());
+  chained.close();
+  // 前置代理没开:给出明确提示
+  const dead = await createRelay({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'pw', via: px.parseVia('127.0.0.1:1') });
+  assert.strictEqual((await connectVia(dead.port, 'secure.test:443')).status, 502);
+  assert.match(dead.stats.lastError, /连不上前置代理/);
+  dead.close(); front.close(); up2.server.close();
+
   target.close();
   console.log('proxy tests passed');
 })().catch((e) => { console.error(e); process.exit(1); });

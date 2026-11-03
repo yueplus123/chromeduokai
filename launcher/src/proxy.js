@@ -90,4 +90,13 @@ function acceptLanguage(locale) {
   return list.join(',');
 }
 
-module.exports = { isIproyal, parseProxyLine, splitIproyalPassword, buildIproyalPassword, newSessionId, localeFor, acceptLanguage, slug };
+// 前置代理:"127.0.0.1:7890"(默认 HTTP)或 "socks5://127.0.0.1:7891"
+function parseVia(s) {
+  const t = String(s || '').trim();
+  if (!t) return null;
+  const p = parseProxyLine(t);
+  return p ? { protocol: p.protocol, host: p.host, port: p.port, username: p.username, password: p.password } : null;
+}
+const formatVia = (v) => (v ? `${v.protocol === 'socks5' ? 'socks5://' : ''}${v.host}:${v.port}` : '');
+
+module.exports = { parseVia, formatVia,  isIproyal, parseProxyLine, splitIproyalPassword, buildIproyalPassword, newSessionId, localeFor, acceptLanguage, slug };

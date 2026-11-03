@@ -167,6 +167,9 @@ function renderProxies() {
     box.append(el('div', { className: 'top' }, el('div', { className: 'name', textContent: x.label, title: x.label }),
       el('span', { className: 'tag', textContent: x.protocol.toUpperCase() })));
     box.append(el('div', { className: 'host', textContent: `${x.host}:${x.port}${x.username ? '  ·  ' + x.username : ''}` }));
+    box.append(x.via
+      ? el('div', { className: 'meta', textContent: `🔒 经前置代理 ${x.via} 出国` })
+      : el('div', { className: 'meta bad', textContent: '未设置前置代理:在国内访问 Google、ChatGPT 等会被重置连接' }));
     if (x.iproyal) box.append(el('div', { className: 'meta', textContent: 'IPRoyal:国家 / 州 / 城市和换 IP 方式在每个分身里单独设置' }));
     if (x.broken) box.append(el('div', { className: 'meta bad', textContent: '密码无法解密(可能是从别的电脑复制来的),请编辑并重新填写密码' }));
     const result = el('div', { className: 'meta' });
@@ -368,6 +371,7 @@ function openProxyForm(x) {
   f.elements.host.value = x ? x.host : '';
   f.elements.port.value = x ? x.port : '';
   f.elements.username.value = x ? x.username : '';
+  f.elements.via.value = x ? (x.via || '') : '127.0.0.1:7890';
   f.elements.password.value = '';
   f.elements.password.placeholder = x ? '留空沿用原密码' : '';
   const hint = $('#proxyHint');
@@ -385,6 +389,7 @@ $('#proxyForm').onsubmit = async (e) => {
   const r = await launcher.saveProxy({
     id: editingProxyId || undefined, label: f.label.value, line: f.line.value,
     protocol: f.protocol.value, host: f.host.value, port: f.port.value, username: f.username.value, password: f.password.value,
+    via: f.via.value,
   });
   if (r.error) { $('#proxyErr').textContent = r.error; $('#proxyErr').hidden = false; return; }
   closeProxyForm();

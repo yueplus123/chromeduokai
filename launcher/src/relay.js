@@ -16,6 +16,7 @@ function reader(sock) {
   sock.on('data', onData);
   sock.on('end', onEnd);
   sock.on('error', onEnd);
+  sock.resume(); // 套在前置代理隧道上的 socket 是暂停状态,要手动恢复
   function check() {
     if (!want) return;
     let n = -1;
@@ -38,7 +39,15 @@ function reader(sock) {
 
 const basicAuth = (u) => 'Basic ' + Buffer.from(`${u.username}:${u.password}`).toString('base64');
 
-function connectUpstream(up) {
+// up.via:前置代理(如本机 Clash 127.0.0.1:7890)。先通过它出国,再连上游代理。
+// 国内直连海外 HTTP/SOCKS5 代理是明文的,访问被封网站会被防火墙重置连接,加一层加密的前置代理就能解决。
+async function connectUpstream(up) {
+  if (up.via) {
+    try { return await openTunnel(up.via, up.host, up.port); } catch (e) {
+      const msg = e.code === 'ECONNREFUSED' ? `连不上前置代理 ${up.via.host}:${up.via.port},请确认 Clash 等代理软件已打开` : '前置代理:' + e.message;
+      throw Object.assign(new Error(msg), { status: e.status });
+    }
+  }
   return new Promise((resolve, reject) => {
     const s = net.connect({ host: up.host, port: up.port });
     s.setTimeout(TIMEOUT, () => s.destroy(new Error('连接上游代理超时')));
@@ -116,6 +125,7 @@ function createRelay(upstream) {
     } else {
       Object.assign(opts, { host: upstream.host, port: upstream.port, path: req.url });
       if (upstream.username) headers['proxy-authorization'] = basicAuth(upstream);
+      if (upstream.via) opts.createConnection = (_o, cb) => { connectUpstream(upstream).then((s) => { cb(null, s); s.resume(); }, cb); };
     }
     const up = http.request(opts, (ur) => {
       // 上游代理自己返回的 5xx(如目标网站被代理商拦截)

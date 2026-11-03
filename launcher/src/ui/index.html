@@ -164,6 +164,9 @@
       <label>用户名<input name="username" autocomplete="off"></label>
       <label>密码<input name="password" type="password" autocomplete="off"></label>
     </div>
+    <label>前置代理 <small>(在国内必须填:先走本机 Clash 等加密出国,再连这个代理,否则 Google、ChatGPT 等会被重置连接。网站看到的仍是这个代理的 IP)</small>
+      <input name="via" placeholder="127.0.0.1:7890" autocomplete="off">
+    </label>
     <div id="proxyHint" class="hint" hidden></div>
     <div id="proxyErr" class="err" hidden></div>
     </div>

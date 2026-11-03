@@ -38,7 +38,7 @@ const netOf = (p) => ({ ...NET_DEFAULT, ...(p.net || {}) });
 function upstreamFor(proxy, net, session) {
   const password = decStr(proxy.enc || '');
   if (password === null) throw new Error('代理密码无法解密(可能是从别的电脑复制来的),请到 IP 池重新填写密码');
-  const up = { protocol: proxy.protocol, host: proxy.host, port: proxy.port, username: proxy.username };
+  const up = { protocol: proxy.protocol, host: proxy.host, port: proxy.port, username: proxy.username, via: proxy.via || null };
   up.password = px.isIproyal(proxy.host)
     ? px.buildIproyalPassword(password, { country: net.country, state: net.state, city: net.city, session, lifetime: net.sticky ? '7d' : '24h' })
     : password;
@@ -104,7 +104,7 @@ function snapshot() {
       proxyLost: !!(netOf(p).proxyId && findProxy(netOf(p).proxyId) && running.get(chrome.normDir(p.dir)) && !live.has(p.id)),
     })),
     proxies: data.proxies.map((x) => ({
-      id: x.id, label: x.label, protocol: x.protocol, host: x.host, port: x.port, username: x.username,
+      id: x.id, label: x.label, protocol: x.protocol, host: x.host, port: x.port, username: x.username, via: px.formatVia(x.via),
       iproyal: px.isIproyal(x.host), broken: !!x.enc && decStr(x.enc) === null,
       profileIds: data.profiles.filter((p) => netOf(p).proxyId === x.id).map((p) => p.id),
     })),
@@ -318,11 +318,13 @@ ipcMain.handle('proxy:save', (_e, d) => {
   }
   if (!fields.password && !(existing && existing.enc) && fields.username) return { error: '请填写密码' };
   if (fields.password && !safeStorage.isEncryptionAvailable()) return { error: '系统加密不可用,无法安全保存密码' };
+  const via = px.parseVia(d.via);
+  if ((d.via || '').trim() && !via) return { error: '前置代理格式不对,例如 127.0.0.1:7890 或 socks5://127.0.0.1:7891' };
   let x = existing;
   if (!x) { x = { id: crypto.randomUUID() }; data.proxies.push(x); }
   Object.assign(x, {
     label: (d.label || '').trim() || `${fields.host}:${fields.port}`,
-    protocol: fields.protocol, host: fields.host, port: fields.port, username: fields.username,
+    protocol: fields.protocol, host: fields.host, port: fields.port, username: fields.username, via,
   });
   if (fields.password) x.enc = encStr(fields.password);
   save(); push();
