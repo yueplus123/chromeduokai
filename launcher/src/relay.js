@@ -229,4 +229,59 @@ async function checkExit(relayPort) {
   return { ip: j.query, countryCode: j.countryCode, country: j.country, region: j.regionName, city: j.city, timezone: j.timezone, ms };
 }
 
-module.exports = { createRelay, checkExit, openTunnel };
+// 分步诊断:逐段测试 本机 → 前置代理 → 代理商 → 测试网站,返回每一步的结果和耗时
+const STEP_TIMEOUT = 15000;
+function withTimeout(p, ms, msg) {
+  let t;
+  return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(msg)), ms); })]).finally(() => clearTimeout(t));
+}
+function tcpProbe(host, port) {
+  return new Promise((resolve, reject) => {
+    const s = net.connect({ host, port });
+    s.once('connect', () => { s.destroy(); resolve(); });
+    s.once('error', (e) => reject(new Error(e.code === 'ECONNREFUSED' ? '连接被拒绝(端口上没有程序在监听)' : e.code === 'ENOTFOUND' ? '域名解析失败' : e.message)));
+  });
+}
+async function diagnose(upstream) {
+  const steps = [];
+  const sockets = [];
+  async function step(name, fn) {
+    const t0 = Date.now();
+    try {
+      const detail = await withTimeout(fn(), STEP_TIMEOUT, `${STEP_TIMEOUT / 1000} 秒内没有回应`);
+      steps.push({ name, ok: true, ms: Date.now() - t0, detail: detail || '' });
+    } catch (e) {
+      steps.push({ name, ok: false, ms: Date.now() - t0, detail: e.message });
+      throw e;
+    }
+  }
+  const target = `${upstream.host}:${upstream.port}`;
+  try {
+    if (upstream.via) {
+      const v = upstream.via;
+      await step(`本机 → 前置代理 ${v.host}:${v.port}`, () => tcpProbe(v.host, v.port));
+      await step(`前置代理 → 代理商 ${target}`, async () => { const ctx = { sockets }; await openTunnel(v, upstream.host, upstream.port, ctx); });
+    } else {
+      await step(`本机 → 代理商 ${target}(直连)`, () => tcpProbe(upstream.host, upstream.port));
+    }
+    let tunnel;
+    await step('代理商验证账号并连到测试网站 ipinfo.io', async () => { tunnel = await openTunnel(upstream, 'ipinfo.io', 443, { sockets }); });
+    await step('通过代理读取出口 IP', () => new Promise((resolve, reject) => {
+      const ts = tls.connect({ socket: tunnel, servername: 'ipinfo.io' });
+      sockets.push(ts);
+      ts.on('error', (e) => reject(new Error('加密连接失败:' + e.message)));
+      ts.on('secureConnect', () => ts.write('GET /json HTTP/1.1\r\nHost: ipinfo.io\r\nUser-Agent: curl/8\r\nConnection: close\r\n\r\n'));
+      let body = '';
+      ts.setEncoding('utf8');
+      ts.on('data', (d) => { body += d; });
+      ts.on('end', () => {
+        try { const j = JSON.parse(body.slice(body.indexOf('{'))); resolve(`${j.ip} · ${[j.country, j.region, j.city].filter(Boolean).join(' / ')}`); } catch { reject(new Error('返回内容无法识别')); }
+      });
+    }));
+  } catch { /* 失败的那一步已记录 */ } finally {
+    for (const s of sockets) s.destroy();
+  }
+  return steps;
+}
+
+module.exports = { createRelay, checkExit, openTunnel, diagnose };

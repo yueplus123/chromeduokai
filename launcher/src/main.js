@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const chrome = require('./chrome');
 const cardLib = require('./card');
 const px = require('./proxy');
-const { createRelay, checkExit } = require('./relay');
+const { createRelay, checkExit, diagnose } = require('./relay');
 const { attachEmulation } = require('./cdp');
 
 const CLIPBOARD_CLEAR_MS = 30000;
@@ -71,6 +71,8 @@ let running = new Map();
 // 走代理启动的分身:profileId -> { relay, child, exit: {ip,country,city,timezone,locale,ms}, startedAt }
 const live = new Map();
 const launching = new Set();
+// 最近一次启动失败的原因和分步诊断:profileId -> { msg, steps, at }
+const launchErrors = new Map();
 let tray = null;
 let quitting = false;
 
@@ -100,6 +102,7 @@ function snapshot() {
       // 最近 3 分钟内的转发失败
       netFailures: live.has(p.id) ? live.get(p.id).relay.stats.failures.filter((f) => Date.now() - f.at < 180000) : [],
       launching: launching.has(p.id),
+      launchError: launchErrors.get(p.id) || null,
       // 绑定了代理、浏览器开着,但中转不在了(比如启动器被关过):此时浏览器上不了网
       proxyLost: !!(netOf(p).proxyId && findProxy(netOf(p).proxyId) && running.get(chrome.normDir(p.dir)) && !live.has(p.id)),
     })),
@@ -267,11 +270,13 @@ async function startProfile(p, override = {}) {
     return { ok: true };
   }
   if (launching.has(p.id)) return { error: '正在启动中,请稍候' };
-  launching.add(p.id); push();
+  launching.add(p.id); launchErrors.delete(p.id); push();
+  let up;
   let relay;
   try {
     const session = net.sticky ? (net.session || px.newSessionId()) : px.newSessionId();
-    relay = await createRelay(upstreamFor(proxy, net, session));
+    up = upstreamFor(proxy, net, session);
+    relay = await createRelay(up);
     const exit = await checkExit(relay.port).catch((e) => { throw new Error(relay.stats.lastError || e.message); });
     exit.locale = px.localeFor(exit.countryCode);
     const acceptLang = px.acceptLanguage(exit.locale);
@@ -289,6 +294,9 @@ async function startProfile(p, override = {}) {
     return { ok: true, exit };
   } catch (e) {
     if (relay) relay.close();
+    // 失败后自动跑一遍分步诊断,结果显示在分身卡片上
+    const steps = up ? await diagnose(up).catch(() => []) : [];
+    launchErrors.set(p.id, { msg: e.message, steps, at: Date.now() });
     return { error: '代理连接失败:' + e.message };
   } finally {
     launching.delete(p.id); push();
@@ -350,7 +358,10 @@ ipcMain.handle('proxy:test', async (_e, id, area = {}) => {
     const exit = await checkExit(relay.port).catch((e) => { throw new Error(relay.stats.lastError || e.message); });
     return { ok: true, exit: { ...exit, locale: px.localeFor(exit.countryCode) } };
   } catch (e) {
-    return { error: e.message };
+    if (relay) { relay.close(); relay = null; }
+    let steps = [];
+    try { steps = await diagnose(upstreamFor(proxy, { ...NET_DEFAULT, ...area, country: px.slug(area.country) }, px.newSessionId())); } catch { /* */ }
+    return { error: e.message, steps };
   } finally { if (relay) relay.close(); }
 });
 

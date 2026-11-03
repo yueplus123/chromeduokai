@@ -121,6 +121,17 @@ function connectVia(port, hostPort) {
   assert.ok(Date.now() - t0 < 25000);
   assert.match(hung.stats.lastError, /屏蔽了这个端口/);
   hung.close(); silent.close();
+
+  // ---- 分步诊断 ----
+  const { diagnose } = require('../src/relay');
+  let st = await diagnose({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'pw', via: px.parseVia('127.0.0.1:1') });
+  assert.strictEqual(st.length, 1); assert.ok(!st[0].ok); assert.match(st[0].detail, /拒绝/);
+  st = await diagnose({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'bad', via });
+  assert.deepStrictEqual(st.map((x) => x.ok), [true, true, false]); assert.match(st[2].detail, /407/);
+  st = await diagnose({ protocol: 'http', host: 'geo.iproyal.com', port: up2.port, username: 'u1', password: 'pw', via });
+  assert.deepStrictEqual(st.map((x) => x.ok), [true, true, true, false]); // 测试目标不是 https,最后一步应失败
+  st = await diagnose({ protocol: 'http', host: '127.0.0.1', port: up2.port, username: 'u1', password: 'pw' });
+  assert.match(st[0].name, /直连/); assert.ok(st[0].ok && st[1].ok);
   front.close(); up2.server.close();
 
   target.close();

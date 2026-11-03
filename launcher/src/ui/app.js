@@ -20,6 +20,19 @@ function toast(msg) {
   toast.t = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
+// 分步诊断结果:每一步一行,✓/✗ + 耗时 + 说明
+function stepsView(steps) {
+  const box = el('div', { className: 'steps' });
+  for (const s of steps || []) {
+    box.append(el('div', { className: 'step ' + (s.ok ? 'ok' : 'bad') },
+      el('span', { className: 'mark', textContent: s.ok ? '✓' : '✗' }),
+      el('span', { className: 'sname', textContent: s.name }),
+      el('span', { className: 'sms', textContent: `${s.ms} ms` }),
+      s.detail ? el('div', { className: 'sdetail', textContent: s.detail }) : ''));
+  }
+  return box;
+}
+
 const CARD_BTNS = [['number', '卡号'], ['exp', '有效期'], ['cvv', 'CVV'], ['holder', '持卡人']];
 
 // 一张卡的复制按钮组(分身卡片和卡库页共用)
@@ -92,6 +105,9 @@ function renderProfiles() {
     if (p.netFailures && p.netFailures.length) {
       card.append(el('div', { className: 'warnrow', title: '这些网站通过代理打不开,原因来自代理商或目标网站' },
         '最近打不开:', ...p.netFailures.slice(0, 3).map((f) => el('div', { textContent: `${f.host.replace(/:443$/, '')} — ${f.msg}` }))));
+    }
+    if (p.launchError && !on) {
+      card.append(el('div', { className: 'warnrow' }, `启动失败:${p.launchError.msg}`, p.launchError.steps.length ? el('div', { className: 'stephead', textContent: '分步诊断:' }) : '', stepsView(p.launchError.steps)));
     }
     if (p.proxyLost) card.append(el('div', { className: 'warnrow', textContent: '⚠ 代理已断开(启动器被关闭过),这个浏览器现在上不了网,请关闭后重新启动' }));
     card.append(...profileCardRows(p));
@@ -183,7 +199,7 @@ function renderProxies() {
       test.disabled = true; result.textContent = '检测中…'; result.className = 'meta';
       const r = await launcher.testProxy(x.id, { country: x.iproyal ? 'us' : '' });
       test.disabled = false;
-      if (r.error) { result.textContent = '✗ ' + r.error; result.className = 'meta bad'; return; }
+      if (r.error) { result.className = 'meta bad'; result.replaceChildren('✗ ' + r.error, stepsView(r.steps)); return; }
       result.textContent = `✓ ${r.exit.ip} · ${[r.exit.country, r.exit.region, r.exit.city].filter(Boolean).join(' / ')} · ${r.exit.timezone} · ${r.exit.ms} ms${x.iproyal ? '(按美国测试)' : ''}`;
     };
     const edit = el('button', { className: 'icon', textContent: '✎', title: '编辑' });
@@ -355,7 +371,7 @@ $('#netTestBtn').onclick = async () => {
   const t = $('#netTest');
   t.hidden = false; t.className = 'hint'; t.textContent = '检测中…';
   const r = await launcher.testProxy(f.proxyId.value, { country: f.country.value, state: f.state.value, city: f.city.value });
-  if (r.error) { t.className = 'hint bad'; t.textContent = '✗ ' + r.error; return; }
+  if (r.error) { t.className = 'hint bad'; t.replaceChildren('✗ ' + r.error, stepsView(r.steps)); return; }
   const x = r.exit;
   t.textContent = `✓ ${x.ip} · ${[x.country, x.region, x.city].filter(Boolean).join(' / ')} · ${x.timezone} · 语言 ${x.locale} · ${x.ms} ms`;
 };
