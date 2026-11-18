@@ -90,7 +90,7 @@ function createWindow() {
     width: 1280, height: 780, useContentSize: true,
     minWidth: 1280, minHeight: 780, maxWidth: 1280, maxHeight: 780,
     resizable: false, maximizable: false, fullscreenable: false,
-    backgroundColor: '#f2f0eb', title: 'Chrome分身启动器',
+    backgroundColor: '#F4F3EE', title: 'Chrome分身启动器',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
   });
   // 禁止 Ctrl+滚轮 / Ctrl+± 缩放页面,避免字体大小被改动
@@ -180,6 +180,23 @@ ipcMain.handle('ext:store', (_e, id, input) => {
   if (!extId) return { error: '没找到有效的插件 ID(32 位字母),请粘贴商店链接或 ID' };
   chrome.launch(data.chromePath, { ...p, home: 'https://chromewebstore.google.com/detail/' + extId });
   afterLaunch();
+  return { ok: true };
+});
+
+// 拖动排序:按界面传来的 id 顺序重排(没传到的保持原相对顺序放在最后)
+ipcMain.handle('profile:reorder', (_e, ids) => {
+  if (!Array.isArray(ids)) return;
+  const pos = new Map(ids.map((id, i) => [id, i]));
+  const rank = (p) => (pos.has(p.id) ? pos.get(p.id) : ids.length + data.profiles.indexOf(p));
+  data.profiles = [...data.profiles].sort((a, b) => rank(a) - rank(b));
+  save(); push();
+});
+
+ipcMain.handle('profile:openDir', (_e, id) => {
+  const p = find(id);
+  if (!p) return { error: '分身不存在' };
+  if (!fs.existsSync(p.dir)) return { error: '数据文件夹还不存在,首次启动时会新建' };
+  shell.openPath(p.dir);
   return { ok: true };
 });
 

@@ -8,36 +8,50 @@
 </head>
 <body>
 <header>
-  <div class="title">Chrome 分身启动器</div>
+  <div class="brand">
+    <span class="logo"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="13" height="11" rx="2"></rect><path d="M8 19h11a2 2 0 0 0 2-2V8"></path></svg></span>
+    分身启动器
+  </div>
   <nav>
     <button id="tabProfiles" class="tab on">分身 <span id="count"></span></button>
     <button id="tabCards" class="tab">卡库 <span id="cardCount"></span></button>
   </nav>
+  <span id="runInfo"></span>
   <span class="spacer"></span>
-  <input id="search" placeholder="搜索名称 / 备注 / 路径">
+  <label class="search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+    <input id="search" placeholder="搜索名称 / 备注 / 路径" aria-label="搜索">
+  </label>
   <span id="profileTools">
     <button id="scan" title="选择一个上级文件夹,把里面的分身数据文件夹批量添加">扫描文件夹</button>
     <button id="reveal" title="在资源管理器中定位配置文件,换电脑时复制它">配置文件</button>
-    <button id="chromeBtn"></button>
+    <button id="chromeBtn"><i></i>Chrome</button>
   </span>
   <button id="add" class="primary">＋ 新建分身</button>
 </header>
 <div id="warn" hidden></div>
 
-<main id="grid"></main>
-<div id="empty" hidden>
-  <h2>还没有分身</h2>
-  <p>点右上角「新建分身」选择数据文件夹,或用「扫描文件夹」批量添加。</p>
-</div>
+<main id="profilesPage">
+  <div id="grid"></div>
+  <div id="empty" hidden>
+    <h2>还没有分身</h2>
+    <p>点右上角「新建分身」选择数据文件夹,或用「扫描文件夹」批量添加。</p>
+  </div>
+  <div id="dragHint">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"></circle><circle cx="15" cy="6" r="1.7"></circle><circle cx="9" cy="12" r="1.7"></circle><circle cx="15" cy="12" r="1.7"></circle><circle cx="9" cy="18" r="1.7"></circle><circle cx="15" cy="18" r="1.7"></circle></svg>
+    拖动卡片可以排序,顺序自动保存
+  </div>
+</main>
 
 <section id="cardsPage" hidden>
-  <div class="note">卡信息用 Windows 系统加密保存在本机。在这里统一管理所有卡,并勾选每张卡用于哪些分身;对应分身的卡片上就会出现一键复制按钮。</div>
   <div id="cardGrid"></div>
   <div id="cardEmpty" hidden>
     <h2>卡库是空的</h2>
-    <p>点右上角「＋ 添加卡片」录入第一张卡。</p>
+    <p>点右上角「＋ 添加卡片」录入第一张卡。卡信息用 Windows 系统加密,只保存在这台电脑。</p>
   </div>
 </section>
+
+<div id="menu" hidden></div>
 
 <div id="modal" hidden>
   <form id="form">

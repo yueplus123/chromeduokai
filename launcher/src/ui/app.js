@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const PALETTE = ['#00754A', '#cba258', '#c82014', '#1E3932', '#2b5148', '#008248', '#b8860b', '#8c3b2a'];
+const PALETTE = ['#0B6E4F', '#1F4FD8', '#B4532A', '#7A3FA0', '#2F6F8F', '#5B6159', '#A3261E', '#8A6D1C'];
 let S = { profiles: [], cards: [], chromeOk: true };
 let view = 'profiles';
 let editingId = null;
@@ -19,87 +19,174 @@ function toast(msg) {
   toast.t = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
-const CARD_BTNS = [['number', '卡号'], ['exp', '有效期'], ['cvv', 'CVV'], ['holder', '持卡人']];
+const CARD_BTNS = [['number', '卡号'], ['exp', '期限'], ['cvv', 'CVV'], ['holder', '持卡人']];
+const svg = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+const ICON = {
+  grip: '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>',
+  stop: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+  edit: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  more: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  card: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
+  trash: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+};
 
-// 一张卡的复制按钮组(分身卡片和卡库页共用)
+// 一张卡的复制按钮(分身卡片和卡库页共用),缺的字段按钮置灰
 function copyButtons(c) {
-  const box = el('div', { className: 'cardrow' });
-  for (const [field, label] of CARD_BTNS) {
-    if (field === 'cvv' && !c.hasCvv) continue;
-    if (field === 'exp' && !c.exp) continue;
-    if (field === 'holder' && !c.holder) continue;
-    const b = el('button', { textContent: label });
-    b.onclick = async () => {
+  return CARD_BTNS.map(([field, label]) => {
+    const missing = (field === 'cvv' && !c.hasCvv) || (field === 'exp' && !c.exp) || (field === 'holder' && !c.holder);
+    const b = el('button', { textContent: label, disabled: missing || c.broken, title: missing ? '这张卡没有录入' + label : '复制' + label });
+    b.onclick = async (e) => {
+      e.stopPropagation();
       const r = await launcher.copyCard(c.id, field);
       toast(r.error || `已复制${label},${r.seconds} 秒后自动清除剪贴板`);
     };
-    box.append(b);
-  }
-  return box;
+    return b;
+  });
 }
 
-// 分身卡片上:该分身用到的每张卡一行
-function profileCardRows(p) {
-  return p.cardIds.map((id) => S.cards.find((c) => c.id === id)).filter(Boolean).map((c) => {
-    const row = el('div', { className: 'cardrow' });
-    if (c.broken) {
-      row.append(`💳 ${c.label}:无法解密(可能是从别的电脑复制来的),请到卡库重新录入`);
-      return row;
-    }
-    row.append(el('span', { className: 'lbl', textContent: `💳 ${c.label} ••${c.last4}` }));
-    row.append(...copyButtons(c).childNodes);
-    return row;
+// 头像文字:GPT-01 → G1,Claude 3 → C3,中文名取第一个字
+function initials(name) {
+  const m = /^([A-Za-z])[A-Za-z]*[\s_-]*0*(\d{1,2})/.exec(name || '');
+  if (m) return (m[1].toUpperCase() + m[2]).slice(0, 3);
+  return (name || '?').trim().slice(0, /^[A-Za-z]/.test(name || '') ? 2 : 1);
+}
+
+// 分配了多张卡的分身:记住当前显示第几张
+const cardPick = new Map();
+
+function cardBox(p) {
+  const cards = p.cardIds.map((id) => S.cards.find((c) => c.id === id)).filter(Boolean);
+  if (!cards.length) {
+    return el('div', { className: 'cardbox empty' },
+      el('div', { className: 'line' }, svg(ICON.card), el('span', { className: 'lbl', textContent: '未分配卡(在卡库里分配)' })));
+  }
+  const i = (cardPick.get(p.id) || 0) % cards.length;
+  const c = cards[i];
+  const line = el('div', { className: 'line' }, svg(ICON.card),
+    el('span', { className: 'lbl', textContent: c.broken ? `${c.label}:无法解密,请重新录入` : `${c.label} ••${c.last4}`, title: c.label }));
+  if (cards.length > 1) {
+    const sw = el('button', { className: 'swap', textContent: `${i + 1}/${cards.length} 换`, title: '切换到这个分身的下一张卡' });
+    sw.onclick = (e) => { e.stopPropagation(); cardPick.set(p.id, i + 1); render(); };
+    line.append(sw);
+  }
+  return el('div', { className: 'cardbox' }, line, el('div', { className: 'copies' }, ...copyButtons(c)));
+}
+
+// ---------- ⋯ 更多操作菜单 ----------
+function openMenu(anchor, items) {
+  const m = $('#menu');
+  m.replaceChildren(...items.map(([label, fn, cls]) => {
+    const b = el('button', { textContent: label, className: cls || '' });
+    b.onclick = () => { closeMenu(); fn(); };
+    return b;
+  }));
+  m.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.min(r.right - w, innerWidth - w - 8) + 'px';
+  m.style.top = (r.bottom + 4 + h > innerHeight ? r.top - h - 4 : r.bottom + 4) + 'px';
+}
+function closeMenu() { $('#menu').hidden = true; }
+document.addEventListener('mousedown', (e) => { if (!$('#menu').hidden && !$('#menu').contains(e.target)) closeMenu(); });
+
+// ---------- 拖动排序 ----------
+let dragId = null;
+function bindDrag(card, p) {
+  card.draggable = true;
+  card.addEventListener('dragstart', (e) => {
+    dragId = p.id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', p.id);
+    requestAnimationFrame(() => card.classList.add('dragging'));
+  });
+  card.addEventListener('dragend', () => {
+    dragId = null;
+    document.querySelectorAll('.card.over, .card.dragging').forEach((n) => n.classList.remove('over', 'dragging'));
+  });
+  card.addEventListener('dragover', (e) => {
+    if (!dragId || dragId === p.id) return;
+    e.preventDefault();
+    card.classList.add('over');
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('over'));
+  card.addEventListener('drop', (e) => {
+    e.preventDefault();
+    card.classList.remove('over');
+    if (!dragId || dragId === p.id) return;
+    // 把拖动的分身放到目标位置(往后拖放在目标之后,往前拖放在目标之前)
+    const ids = S.profiles.map((x) => x.id);
+    const from = ids.indexOf(dragId), to = ids.indexOf(p.id);
+    ids.splice(from, 1);
+    ids.splice(to, 0, dragId);
+    S.profiles = ids.map((id) => S.profiles.find((x) => x.id === id));
+    render();
+    launcher.reorder(ids);
   });
 }
 
 function renderProfiles() {
   const q = $('#search').value.trim().toLowerCase();
   const list = S.profiles.filter((p) => !q || [p.name, p.note, p.dir].join('\n').toLowerCase().includes(q));
-  $('#empty').hidden = view !== 'profiles' || S.profiles.length > 0;
-  $('#grid').hidden = view !== 'profiles' || S.profiles.length === 0;
+  $('#empty').hidden = S.profiles.length > 0;
+  $('#grid').hidden = S.profiles.length === 0;
+  $('#dragHint').hidden = S.profiles.length < 2;
 
-  $('#chromeBtn').textContent = S.chromeOk ? 'Chrome 路径' : '⚠ 设置 Chrome 路径';
-  $('#chromeBtn').title = S.chromePath || '未找到 Chrome';
+  $('#chromeBtn').classList.toggle('bad', !S.chromeOk);
+  $('#chromeBtn').title = S.chromeOk ? `${S.chromePath}\n点击更改 Chrome 路径` : '没有找到 chrome.exe,点击手动选择';
   const warn = $('#warn');
   warn.hidden = S.chromeOk;
-  warn.textContent = '没有找到 chrome.exe,请点右上角「设置 Chrome 路径」手动选择。';
+  warn.textContent = '没有找到 chrome.exe,请点右上角「Chrome」按钮手动选择。';
 
   $('#grid').replaceChildren(...list.map((p) => {
     const on = !!p.pid;
     const card = el('div', { className: 'card' + (on ? ' on' : '') });
-    const status = el('div', { className: 'status' }, el('i'), on ? '运行中' : '未运行');
-    card.append(el('div', { className: 'top' }, el('div', { className: 'pname', textContent: p.name, title: p.name }), status));
 
-    // 路径不在卡片上显示(点编辑可查看);只有文件夹不存在时才给一行提醒
-    if (!p.dirExists) card.append(el('div', { className: 'meta bad', textContent: '数据文件夹不存在,首次启动时会新建', title: p.dir }));
-    const tags = el('div', { className: 'meta' });
-    if (p.mode === 'incognito') tags.append(el('span', { className: 'tag inc', textContent: '无痕' }));
-    if (p.extensions.length) tags.append(el('span', { className: 'tag', textContent: `插件 ${p.extensions.length}` }));
-    if (p.home) tags.append(el('span', { className: 'tag', textContent: '起始页' }));
-    if (p.note) tags.append(p.note);
-    if (tags.childNodes.length) card.append(tags);
-    card.append(...profileCardRows(p));
+    const av = el('div', { className: 'avatar', textContent: initials(p.name) });
+    av.style.background = p.color || '#0B6E4F';
+    card.append(el('div', { className: 'head' }, av,
+      el('div', { className: 'who' },
+        el('span', { className: 'pname', textContent: p.name, title: `${p.name}\n${p.dir}` }),
+        el('span', { className: 'status' }, el('i'), on ? '运行中' : '未运行')),
+      el('span', { className: 'grip', title: '拖动排序' }, svg(ICON.grip))));
 
-    const open = el('button', { className: 'grow primary', textContent: on ? '再开一个窗口' : '启动', disabled: !S.chromeOk });
+    const tags = el('div', { className: 'tags' });
+    tags.append(p.mode === 'incognito' ? el('span', { className: 'tag inc', textContent: '无痕' }) : el('span', { className: 'tag normal', textContent: '普通' }));
+    if (p.extensions.length) tags.append(el('span', { className: 'tag', textContent: `插件 ${p.extensions.length}`, title: p.extensions.join('\n') }));
+    if (p.home) tags.append(el('span', { className: 'tag', textContent: '起始页', title: p.home }));
+    if (p.extraArgs) tags.append(el('span', { className: 'tag', textContent: '参数', title: p.extraArgs }));
+    if (!p.dirExists) tags.append(el('span', { className: 'tag bad', textContent: '新文件夹', title: '数据文件夹不存在,首次启动时会新建\n' + p.dir }));
+    card.append(tags);
+
+    card.append(el('div', { className: 'note' + (p.note ? '' : ' empty'), textContent: p.note || '无备注', title: p.note || '' }));
+    card.append(cardBox(p));
+
+    const open = el('button', { className: 'main' + (on ? '' : ' primary'), textContent: on ? '新窗口' : '启动', disabled: !S.chromeOk });
     open.onclick = async () => { const r = await launcher.launch(p.id); if (r && r.error) toast(r.error); };
     const btns = el('div', { className: 'btns' }, open);
     if (on) {
-      const close = el('button', { textContent: '关闭', title: '正常关闭(等同点窗口关闭按钮)' });
+      const close = el('button', { className: 'sq', title: '关闭(等同点窗口关闭按钮)', ariaLabel: '关闭' }, svg(ICON.stop));
       close.onclick = () => launcher.close(p.id, false);
       btns.append(close);
     }
-    const edit = el('button', { className: 'icon', textContent: '✎', title: '编辑(插件、窗口类型等)' });
+    const edit = el('button', { className: 'sq', title: '编辑(插件、窗口类型等)', ariaLabel: '编辑' }, svg(ICON.edit));
     edit.onclick = () => openForm(p);
-    const del = el('button', { className: 'icon danger', textContent: '🗑', title: '从列表移除(不会删除磁盘上的数据和卡库里的卡)' });
-    del.onclick = () => {
-      if (on) return toast('请先关闭该分身再移除');
-      if (confirm(`从列表中移除「${p.name}」?\n\n只移除这条记录;磁盘上的数据文件夹和卡库里的卡都不会被删除。`)) launcher.remove(p.id);
-    };
-    btns.append(edit, del);
+    const more = el('button', { className: 'sq', title: '更多操作', ariaLabel: '更多操作' }, svg(ICON.more));
+    more.onclick = () => openMenu(more, [
+      ['打开数据文件夹', async () => { const r = await launcher.openDir(p.id); if (r && r.error) toast(r.error); }],
+      ...(on ? [['强制关闭(卡死时用)', () => launcher.close(p.id, true)]] : []),
+      ['从列表移除', () => {
+        if (on) return toast('请先关闭该分身再移除');
+        if (confirm(`从列表中移除「${p.name}」?\n\n只移除这条记录;磁盘上的数据文件夹和卡库里的卡都不会被删除。`)) launcher.remove(p.id);
+      }, 'danger'],
+    ]);
+    btns.append(edit, more);
     card.append(btns);
+    bindDrag(card, p);
     return card;
   }));
 }
+
+const FACE_COLORS = ['#123A2E', '#2A3550', '#4A2E3E', '#3A3424', '#1F3F4A', '#3B2A52'];
 
 function renderCards() {
   const q = $('#search').value.trim().toLowerCase();
@@ -108,48 +195,43 @@ function renderCards() {
   $('#cardEmpty').hidden = S.cards.length > 0;
   $('#cardGrid').hidden = S.cards.length === 0;
 
-  $('#cardGrid').replaceChildren(...list.map((c) => {
-    const box = el('div', { className: 'ccard' });
-    const top = el('div', { className: 'top' }, el('div', { className: 'name', textContent: c.label, title: c.label }));
-    box.append(top);
-    if (c.broken) {
-      box.append(el('div', { className: 'meta bad', textContent: '无法解密(可能是从别的电脑复制来的),请编辑并重新录入' }));
-    } else {
-      box.append(el('div', { className: 'num', textContent: `•••• •••• •••• ${c.last4}` }));
-      box.append(el('div', { className: 'meta', textContent: [c.holder, c.exp && `有效期 ${c.exp}`].filter(Boolean).join('  ·  ') || '—' }));
-      box.append(copyButtons(c));
-    }
-    if (c.note) box.append(el('div', { className: 'meta', textContent: c.note }));
-
+  $('#cardGrid').replaceChildren(...list.map((c, i) => {
+    const face = el('div', { className: 'face' + (c.broken ? ' broken' : '') },
+      el('span', { className: 'name', textContent: c.label, title: c.label }),
+      el('span', { className: 'num', textContent: c.broken ? '无法解密' : `•••• ${c.last4}` }),
+      el('span', { className: 'sub', textContent: c.broken ? '可能是从别的电脑复制来的,请编辑并重新录入' : [c.holder, c.exp && `有效期 ${c.exp}`].filter(Boolean).join(' · ') || '—' }));
+    if (!c.broken) face.style.background = FACE_COLORS[i % FACE_COLORS.length];
+    const body = el('div', { className: 'body' });
+    if (!c.broken) body.append(el('div', { className: 'copies' }, ...copyButtons(c)));
+    if (c.note) body.append(el('div', { className: 'cnote', textContent: c.note }));
     const names = c.profileIds.map(nameOf).filter(Boolean);
-    if (names.length) {
-      box.append(el('div', { className: 'used' }, '用于:', el('div', { className: 'usedtags' }, ...names.map((n) => el('span', { className: 'tag', textContent: n })))));
-    } else {
-      box.append(el('div', { className: 'used none', textContent: '还没有分配给任何分身' }));
-    }
-
-    const edit = el('button', { className: 'grow', textContent: '编辑 / 分配分身' });
+    body.append(names.length
+      ? el('div', { className: 'used', textContent: `用于 ${names.length} 个分身` })
+      : el('div', { className: 'used none', textContent: '还没有分配给任何分身' }));
+    if (names.length) body.append(el('div', { className: 'usedtags' }, ...names.map((n) => el('span', { textContent: n }))));
+    const edit = el('button', { className: 'main', textContent: '编辑 / 分配分身' });
     edit.onclick = () => openCardForm(c);
-    const del = el('button', { className: 'icon danger', textContent: '🗑', title: '删除这张卡' });
-    del.onclick = () => {
-      if (confirm(`删除「${c.label}」?\n\n会从所有分身上移除,且无法恢复。`)) launcher.deleteCard(c.id);
-    };
-    box.append(el('div', { className: 'btns' }, edit, del));
-    return box;
+    const del = el('button', { className: 'sq danger', title: '删除这张卡', ariaLabel: '删除这张卡' }, svg(ICON.trash));
+    del.onclick = () => { if (confirm(`删除「${c.label}」?\n\n会从所有分身上移除,且无法恢复。`)) launcher.deleteCard(c.id); };
+    body.append(el('div', { className: 'btns' }, edit, del));
+    return el('div', { className: 'ccard' }, face, body);
   }));
 }
 
 function render() {
-  $('#count').textContent = `${S.profiles.length}(运行 ${S.profiles.filter((p) => p.pid).length})`;
+  const runningCount = S.profiles.filter((p) => p.pid).length;
+  $('#count').textContent = S.profiles.length;
   $('#cardCount').textContent = S.cards.length;
+  $('#runInfo').textContent = `${runningCount} 个运行中`;
   const onCards = view === 'cards';
+  $('#runInfo').hidden = onCards || !runningCount;
   $('#tabProfiles').classList.toggle('on', !onCards);
   $('#tabCards').classList.toggle('on', onCards);
   $('#cardsPage').hidden = !onCards;
+  $('#profilesPage').hidden = onCards;
   $('#profileTools').hidden = onCards;
   $('#add').textContent = onCards ? '＋ 添加卡片' : '＋ 新建分身';
-  if (!onCards) { $('#cardEmpty').hidden = true; }
-  if (onCards) { $('#empty').hidden = true; $('#grid').hidden = true; renderCards(); } else { renderProfiles(); }
+  if (onCards) renderCards(); else renderProfiles();
 }
 
 function setView(v) { view = v; render(); }
@@ -261,7 +343,7 @@ $('#reveal').onclick = () => launcher.revealData();
 $('#search').oninput = render;
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('#cardModal').hidden) closeCardForm(); else if (!$('#modal').hidden) closeForm();
+  if (!$('#menu').hidden) closeMenu(); else if (!$('#cardModal').hidden) closeCardForm(); else if (!$('#modal').hidden) closeForm();
 });
 
 launcher.onState((s) => { S = s; render(); });

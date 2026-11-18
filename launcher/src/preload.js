@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('launcher', {
   onState: (fn) => ipcRenderer.on('state', (_e, s) => fn(s)),
   save: call('profile:save'),
   remove: call('profile:delete'),
+  reorder: call('profile:reorder'),
+  openDir: call('profile:openDir'),
   launch: call('profile:launch'),
   close: call('profile:close'),
   pickDir: call('dialog:dir'),

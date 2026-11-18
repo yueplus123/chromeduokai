@@ -4,3 +4,6 @@ dist/
 launcher/data/profiles.json
 浏览器分身数据/*
 !浏览器分身数据/.gitkeep
+
+# 一键更新的备份
+_更新备份/

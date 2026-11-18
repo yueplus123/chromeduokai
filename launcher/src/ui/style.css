@@ -1,155 +1,184 @@
-/* 星巴克风格:奶油底 + 绿色文字 + 金色点缀 + 红色警示
-   色值取自 Starbucks 设计规范 https://www.shadcn.io/design/starbucks */
+/* 窗口固定 1280×780:顶部 60px 工具栏 + 5 列 × 3 行分身卡片,15 个分身一屏放下 */
 :root {
-  --green: #006241;          /* Starbucks Green:标题、强调文字 */
-  --green-accent: #00754A;   /* 主按钮 */
-  --green-house: #1E3932;    /* 正文深绿 */
-  --green-soft: #4a766a;     /* 次要文字 */
-  --green-light: #d4e9e2;    /* 悬停底色 */
-  --gold: #cba258;
-  --gold-light: #dfc49d;
-  --gold-lightest: #faf6ee;
-  --gold-text: #7a5c14;      /* 金色底上的文字,保证对比度 */
-  --red: #c82014;
-  --red-light: #fdecea;
-  --cream: #f2f0eb;
-  --white: #ffffff;
-  --line: #d6dbde;
-  --shadow: 0 2px 10px rgba(30, 57, 50, .10);
+  --accent: #0B6E4F;         /* 主色:按钮、选中、运行中 */
+  --accent-dark: #08503A;
+  --accent-soft: #E7F1EC;
+  --run-border: #8FCBB0;
+  --run-dot: #1E9E6A;
+  --ink: #1B1F1D;            /* 正文 */
+  --ink-2: #3D423E;
+  --muted: #6B6F6A;          /* 次要文字(在白底和米底上对比度都 ≥4.5) */
+  --faint: #A8A59B;          /* 占位文字 */
+  --bg: #F4F3EE;
+  --white: #FFFFFF;
+  --line: #E4E2DA;
+  --line-2: #DCD9CF;
+  --chip: #F1EFE8;
+  --card-bg: #FBF7EC;
+  --card-line: #EFE5C9;
+  --card-text: #6B5516;
+  --red: #A3261E;
+  --red-light: #FCE8E4;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
-  background: var(--cream); color: var(--green-house);
-  font: 600 16px/1.5 "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
-  letter-spacing: -.01em;
+  background: var(--bg); color: var(--ink);
+  font: 400 14px/1.45 "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
   display: flex; flex-direction: column; overflow: hidden;
 }
 ::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 5px; border: 2px solid var(--cream); }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 5px; border: 2px solid var(--bg); }
 
 button {
-  font: inherit; font-weight: 700; font-size: 15px; color: var(--green);
-  background: var(--white); border: 1.5px solid var(--line); border-radius: 50px;
-  padding: 8px 18px; cursor: pointer; white-space: nowrap;
-  transition: background .15s, transform .2s ease, border-color .15s;
+  font: inherit; font-size: 13px; color: var(--ink-2);
+  background: var(--white); border: 1px solid var(--line-2); border-radius: 8px;
+  height: 36px; padding: 0 12px; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .12s, border-color .12s;
 }
-button:hover:not(:disabled) { background: var(--green-light); border-color: var(--green-accent); }
-button:active:not(:disabled) { transform: scale(.96); }
+button:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--run-border); }
 button:disabled { opacity: .45; cursor: default; }
-input, select {
-  font: inherit; font-weight: 600; color: var(--green-house);
-  background: var(--white); border: 1.5px solid var(--line); border-radius: 10px;
-  padding: 9px 12px; width: 100%;
-}
-input::placeholder { color: #8fa89f; font-weight: 500; }
-input:focus, select:focus { outline: 3px solid var(--green-light); border-color: var(--green-accent); }
-input[type=checkbox] { accent-color: var(--green-accent); }
-.primary { background: var(--green-accent) !important; color: var(--white) !important; border-color: var(--green-accent) !important; }
-.primary:hover:not(:disabled) { background: var(--green) !important; border-color: var(--green) !important; }
-
-header {
-  display: flex; align-items: center; gap: 10px; padding: 14px 22px; flex-wrap: wrap;
-  background: var(--white); border-bottom: 3px solid var(--gold); box-shadow: var(--shadow);
-}
-.title { font-weight: 800; font-size: 21px; color: var(--green); margin-right: 14px; white-space: nowrap; flex: none; }
-.spacer { flex: 1; }
-#search { flex: 0 1 240px; min-width: 140px; width: auto; border-radius: 50px; padding-left: 16px; }
-#warn { background: var(--red-light); color: var(--red); padding: 10px 22px; font-size: 15px; font-weight: 700; }
-
-nav { display: flex; gap: 6px; }
-nav .tab { border-color: transparent; background: transparent; color: var(--green); font-size: 16px; padding: 8px 20px; }
-nav .tab.on { background: var(--green-accent); color: var(--white); border-color: var(--green-accent); }
-nav .tab:hover:not(.on):not(:disabled) { background: var(--green-light); border-color: transparent; }
-nav .tab span { font-size: 13px; margin-left: 4px; opacity: .8; }
-nav, #profileTools, #add { flex: none; }
-#profileTools { display: flex; gap: 8px; }
-
-#grid { flex: 1; overflow-y: auto; padding: 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
-.card, .ccard {
-  background: var(--white); border: 1.5px solid #e7e7e7; border-radius: 16px; padding: 18px;
-  display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow);
-}
-.card.on { border-color: var(--green-accent); box-shadow: 0 0 0 2px var(--green-light), var(--shadow); }
-.top { display: flex; align-items: center; gap: 12px; }
-/* 分身名称徽章:星巴克深绿渐变底 + 金色字 + 金色描边 */
-.pname {
-  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 7px 20px; border-radius: 50px;
-  font-size: 19px; font-weight: 800; letter-spacing: .06em; color: var(--gold-light);
-  background: linear-gradient(135deg, var(--green-accent) 0%, var(--green) 45%, var(--green-house) 100%);
-  border: 2px solid var(--gold);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 0 0 3px var(--gold-lightest), 0 3px 8px rgba(30, 57, 50, .28);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
-}
-.top .status { margin-left: auto; flex: none; }
-.name { font-weight: 800; font-size: 18px; color: var(--green); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.status { font-size: 14px; font-weight: 700; color: var(--red); display: flex; align-items: center; gap: 6px; }
-.status i { width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 3px var(--red-light); }
-.on .status { color: var(--green-accent); }
-.on .status i { background: var(--green-accent); box-shadow: 0 0 0 3px var(--green-light); }
-.meta { font-size: 14px; color: var(--green-soft); word-break: break-all; }
-.meta.bad { color: var(--red); }
-.meta .tag, .tag { display: inline-block; background: var(--gold-lightest); border: 1px solid var(--gold-light); border-radius: 50px; padding: 1px 11px; margin: 0 5px 3px 0; color: var(--gold-text); font-size: 13px; font-weight: 700; }
-.tag.inc { background: var(--green-house); border-color: var(--green-house); color: var(--gold-lightest); }
-.btns { display: flex; gap: 8px; margin-top: auto; }
-.btns .grow { flex: 1; }
-/* 「启动」按钮:金色底 + 深绿字,与绿底金字的名称徽章互补(取色自 Starbucks 设计规范,光泽参考 css-buttons.com #69) */
-.btns .grow.primary {
-  background: linear-gradient(180deg, #dfc49d 0%, var(--gold) 100%) !important;
-  color: var(--green-house) !important; border-color: #b8893a !important;
-  font-size: 16px; font-weight: 800; letter-spacing: .12em;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 5px rgba(122, 92, 20, .30);
-}
-.btns .grow.primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ead3ae 0%, #d6b062 100%) !important;
-  border-color: var(--green-accent) !important;
-}
-.btns .grow.primary:disabled { filter: grayscale(.6); }
-.btns .icon { padding: 8px 13px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.primary { background: var(--accent) !important; color: var(--white) !important; border-color: var(--accent) !important; font-weight: 700; }
+.primary:hover:not(:disabled) { background: var(--accent-dark) !important; border-color: var(--accent-dark) !important; }
 .danger { color: var(--red); }
-.danger:hover:not(:disabled) { background: var(--red) !important; border-color: var(--red) !important; color: var(--white) !important; }
+.danger:hover:not(:disabled) { background: var(--red-light) !important; border-color: #F0C6BC !important; }
+input, select {
+  font: inherit; font-weight: 400; color: var(--ink); background: var(--white);
+  border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 11px; width: 100%;
+}
+input::placeholder { color: var(--faint); }
+input[type=checkbox] { accent-color: var(--accent); }
 
-#empty, #cardEmpty { flex: 1; display: grid; place-content: center; text-align: center; color: var(--green-soft); }
-#empty h2, #cardEmpty h2 { color: var(--green); font-size: 24px; font-weight: 800; }
+/* ---------- 顶部工具栏 ---------- */
+header {
+  height: 60px; flex: none; padding: 0 20px; display: flex; align-items: center; gap: 12px;
+  background: var(--white); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 800; margin-right: 4px; white-space: nowrap; }
+.logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; }
+nav { display: flex; gap: 4px; padding: 4px; background: var(--chip); border-radius: 10px; }
+nav .tab { height: 34px; padding: 0 16px; border: 0; border-radius: 7px; background: transparent; font-size: 14px; color: #4A4F4B; }
+nav .tab span { font-size: 12px; color: var(--muted); }
+nav .tab.on { background: var(--white); color: var(--accent); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+nav .tab.on span { color: var(--accent); }
+nav .tab:hover:not(.on) { background: rgba(255,255,255,.6); }
+#runInfo { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.spacer { flex: 1; }
+.search { display: flex; align-items: center; gap: 7px; height: 36px; width: 220px; padding: 0 11px; background: #F7F6F2; border: 1px solid var(--line-2); border-radius: 8px; color: var(--muted); }
+.search input { border: 0; padding: 0; background: transparent; font-size: 13px; height: 100%; }
+.search input:focus-visible { outline: 0; }
+.search:focus-within { border-color: var(--accent); }
+#profileTools { display: flex; gap: 8px; }
+#chromeBtn i { width: 7px; height: 7px; border-radius: 50%; background: var(--run-dot); }
+#chromeBtn.bad { color: var(--red); border-color: #F0C6BC; }
+#chromeBtn.bad i { background: var(--red); }
+#add { padding: 0 14px; font-size: 14px; }
+#warn { background: var(--red-light); color: var(--red); padding: 9px 20px; font-size: 14px; font-weight: 700; flex: none; }
 
-.modal, #modal, #cardModal { position: fixed; inset: 0; background: rgba(30, 57, 50, .5); display: grid; place-items: center; z-index: 10; }
-#modal[hidden], #cardModal[hidden], #warn[hidden], #toast[hidden], #empty[hidden], #grid[hidden], #formErr[hidden], #cardErr[hidden], #cardHint[hidden], #cardsPage[hidden], #cardEmpty[hidden], #profileTools[hidden] { display: none; }
+/* ---------- 分身网格 ---------- */
+#profilesPage { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#grid {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 14px 20px 6px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 214px; gap: 10px; align-content: start;
+}
+#dragHint { flex: none; display: flex; align-items: center; gap: 6px; padding: 4px 20px 10px; font-size: 12px; color: var(--muted); }
+
+.card {
+  min-width: 0; display: flex; flex-direction: column; gap: 7px; padding: 10px 11px;
+  background: var(--white); border: 1px solid var(--line); border-radius: 11px; cursor: grab;
+}
+.card.on { border: 1.5px solid var(--run-border); }
+.card.dragging { opacity: .45; }
+.card.over { border: 2px dashed var(--accent); }
+.card .head { display: flex; align-items: center; gap: 8px; }
+.avatar { width: 30px; height: 30px; flex: none; border-radius: 8px; color: var(--white); display: grid; place-items: center; font-weight: 800; font-size: 12px; }
+.who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pname { font-size: 14px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.status i { width: 6px; height: 6px; border-radius: 50%; background: #C9C6BC; }
+.card.on .status { color: var(--accent); }
+.card.on .status i { background: var(--run-dot); }
+.grip { flex: none; color: #B9B6AC; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 4px; height: 18px; overflow: hidden; }
+.tag { font-size: 11px; line-height: 18px; padding: 0 6px; border-radius: 5px; background: var(--chip); color: #4A4F4B; white-space: nowrap; }
+.tag.normal { background: var(--accent-soft); color: var(--accent); }
+.tag.inc { background: #2C302D; color: var(--white); }
+.tag.bad { background: var(--red-light); color: var(--red); }
+.note { font-size: 12px; line-height: 16px; height: 16px; color: #4A4F4B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note.empty { color: var(--faint); }
+
+.cardbox { display: flex; flex-direction: column; gap: 4px; padding: 5px 6px 6px 7px; border-radius: 7px; background: var(--card-bg); border: 1px solid var(--card-line); }
+.cardbox.empty { background: #F7F6F2; border: 1px dashed var(--line-2); }
+.cardbox .line { display: flex; align-items: center; gap: 5px; min-width: 0; height: 18px; }
+.cardbox .lbl { flex: 1; min-width: 0; font-size: 11px; font-weight: 700; color: var(--card-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cardbox.empty .lbl { color: var(--faint); font-weight: 400; }
+.cardbox .swap { height: 18px; padding: 0 5px; font-size: 10px; border-color: #E6D8B0; color: var(--card-text); }
+.cardbox .copies { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.cardbox .copies button { height: 22px; padding: 0; font-size: 11px; border-color: #E6D8B0; border-radius: 5px; }
+.cardbox .copies button:hover:not(:disabled) { background: #FFF6DD; border-color: #D9BF73; }
+
+.btns { display: flex; gap: 5px; margin-top: auto; }
+.btns .main { flex: 1; height: 32px; font-size: 13px; }
+.btns .sq { width: 32px; height: 32px; padding: 0; color: #4A4F4B; }
+.card.on .btns .main { background: #F1F8F4; color: var(--accent); border-color: #9FD3BC; font-weight: 700; }
+
+#empty, #cardEmpty { flex: 1; display: grid; place-content: center; text-align: center; color: var(--muted); }
+#empty h2, #cardEmpty h2 { color: var(--ink); font-size: 22px; margin: 0 0 6px; }
+
+/* ⋯ 更多操作菜单 */
+#menu { position: fixed; z-index: 30; min-width: 170px; padding: 5px; background: var(--white); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.16); display: flex; flex-direction: column; }
+#menu button { justify-content: flex-start; border: 0; height: 36px; font-size: 13px; }
+#menu button.danger { color: var(--red); }
+
+/* ---------- 卡库 ---------- */
+#cardsPage { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; }
+#cardGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-content: start; }
+.ccard { display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.ccard .face { padding: 15px 16px; color: var(--white); display: flex; flex-direction: column; gap: 12px; background: #123A2E; }
+.ccard .face .name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccard .face .num { font-size: 20px; font-weight: 700; letter-spacing: 3px; font-variant-numeric: tabular-nums; }
+.ccard .face .sub { font-size: 12px; opacity: .9; }
+.ccard .face.broken { background: #6B2A24; }
+.ccard .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 9px; }
+.ccard .copies { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.ccard .copies button { height: 30px; padding: 0; }
+.ccard .cnote { font-size: 12px; color: #4A4F4B; }
+.ccard .used { font-size: 12px; color: var(--muted); }
+.ccard .used.none { color: var(--red); font-weight: 700; }
+.ccard .usedtags { display: flex; flex-wrap: wrap; gap: 5px; }
+.ccard .usedtags span { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+.ccard .btns .main { height: 36px; font-weight: 700; color: var(--ink); }
+.ccard .btns .sq { width: 36px; height: 36px; }
+
+/* ---------- 弹窗表单 ---------- */
+.modal, #modal, #cardModal { position: fixed; inset: 0; background: rgba(20, 28, 24, .45); display: grid; place-items: center; z-index: 10; }
+#modal[hidden], #cardModal[hidden], #warn[hidden], #toast[hidden], #empty[hidden], #grid[hidden], #dragHint[hidden], #formErr[hidden], #cardErr[hidden], #cardHint[hidden], #cardsPage[hidden], #profilesPage[hidden], #cardEmpty[hidden], #profileTools[hidden], #menu[hidden], #runInfo[hidden] { display: none; }
 #form, #cardForm {
   width: 560px; max-width: 94vw; max-height: calc(100vh - 32px); overflow: hidden;
-  background: var(--white); border: 2px solid var(--gold); border-radius: 18px; padding: 24px;
-  display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  background: var(--white); border-radius: 14px; padding: 22px;
+  display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 48px rgba(0, 0, 0, .25);
 }
-#form h3, #cardForm h3 { margin: 0; font-size: 22px; font-weight: 800; color: var(--green); }
-#form label, #cardForm label { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: 700; color: var(--green); flex: 1; }
-#form small, #cardForm small { color: var(--green-soft); font-weight: 500; font-size: 13px; }
+#form h3, #cardForm h3 { margin: 0; font-size: 19px; font-weight: 800; }
+#form label, #cardForm label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 700; color: var(--ink-2); flex: 1; }
+#form small, #cardForm small { color: var(--muted); font-weight: 400; font-size: 12px; }
 #form .narrow, #cardForm .narrow { flex: none; width: 96px; }
-#form input[type=color], #cardForm input[type=color] { padding: 3px; height: 42px; }
+#form input[type=color], #cardForm input[type=color] { padding: 3px; height: 38px; }
 .row { display: flex; gap: 12px; align-items: flex-end; }
-#form fieldset, #cardForm fieldset { border: 1.5px solid var(--gold-light); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; background: var(--gold-lightest); }
-#form legend, #cardForm legend { font-size: 14px; font-weight: 800; color: var(--gold-text); padding: 0 8px; }
-#form .check, #cardForm .check { flex-direction: row; align-items: center; gap: 8px; }
-#form .check input, #cardForm .check input { width: auto; }
-.hint { font-size: 14px; color: var(--green-accent); font-weight: 700; }
-.ext { display: flex; align-items: center; gap: 8px; font-size: 14px; background: var(--white); border: 1px solid var(--gold-light); border-radius: 10px; padding: 5px 12px; margin-bottom: 4px; }
-.ext span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--green-soft); }
-.ext button { padding: 0 10px; border: 0; color: var(--red); }
-.cardrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 14px; color: var(--green-soft); background: var(--gold-lightest); border: 1px solid var(--gold-light); border-radius: 12px; padding: 8px 10px; }
-.cardrow .lbl { margin-right: 2px; color: var(--gold-text); font-weight: 800; }
-.cardrow button { padding: 3px 13px; font-size: 14px; border-color: var(--gold-light); }
-.actions { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding-top: 12px; border-top: 1.5px solid var(--gold-light); }
+#form fieldset, #cardForm fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 12px; background: #FAF9F6; }
+#form legend, #cardForm legend { font-size: 13px; font-weight: 800; color: var(--ink-2); padding: 0 6px; }
+.hint { font-size: 13px; color: var(--accent); font-weight: 700; }
+.ext { display: flex; align-items: center; gap: 8px; font-size: 13px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; padding: 4px 4px 4px 10px; margin-bottom: 4px; }
+.ext span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ext button { height: 28px; border: 0; color: var(--red); }
+.actions { display: flex; justify-content: flex-end; gap: 10px; flex: none; padding-top: 12px; border-top: 1px solid var(--line); }
+.actions button { height: 38px; padding: 0 18px; font-size: 14px; }
 #form .body, #cardForm .body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; flex: 1; min-height: 0; padding-right: 6px; }
-.err { color: var(--red); font-size: 15px; font-weight: 700; }
-#toast { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); background: var(--green-house); color: var(--gold-lightest); font-weight: 700; padding: 11px 24px; border-radius: 50px; border: 1.5px solid var(--gold); box-shadow: var(--shadow); z-index: 20; }
-
-#cardsPage { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
-#cardsPage .note { font-size: 14px; color: var(--green-soft); font-weight: 500; }
-#cardGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-content: start; }
-.ccard .num { font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: .08em; font-variant-numeric: tabular-nums; }
-.ccard .used { font-size: 14px; color: var(--green-soft); }
-.ccard .used.none { color: var(--red); font-weight: 700; }
-.ccard .usedtags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.err { color: var(--red); font-size: 14px; font-weight: 700; }
 #useList { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
-#cardForm .use { flex-direction: row; align-items: center; gap: 10px; font-size: 15px; color: var(--green-house); }
+#cardForm .use { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; font-weight: 400; color: var(--ink); }
 #cardForm .use input { width: auto; }
+#toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--white); font-weight: 700; padding: 10px 22px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.2); z-index: 40; }
